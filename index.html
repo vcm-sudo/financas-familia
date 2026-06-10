@@ -3,201 +3,147 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finanças Família</title>
+<title>Transações Família</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0F1117;
-    --surface: #181D27;
-    --card: #1E2535;
-    --border: #2A3348;
-    --accent: #4F8EF7;
-    --green: #34D399;
-    --red: #F87171;
-    --amber: #FBBF24;
-    --muted: #8A94A6;
-    --text: #E8EDF5;
-    --vini: #4F8EF7;
-    --esposa: #A78BFA;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+:root {
+  --bg:#0F1117; --surface:#181D27; --card:#1E2535; --border:#2A3348;
+  --accent:#4F8EF7; --green:#34D399; --red:#F87171; --amber:#FBBF24;
+  --muted:#8A94A6; --text:#E8EDF5; --vini:#4F8EF7; --esposa:#A78BFA;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;}
 
-  /* LOGIN */
-  #login-screen {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100vh; gap: 24px;
-  }
-  .login-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
-    padding: 48px 40px; text-align: center; max-width: 380px; width: 90%;
-  }
-  .login-logo { font-size: 40px; margin-bottom: 16px; }
-  .login-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
-  .login-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
-  .btn-google {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    background: white; color: #1f1f1f; border: none; border-radius: 10px;
-    padding: 13px 24px; font-size: 15px; font-weight: 600; cursor: pointer;
-    width: 100%; transition: opacity 0.15s;
-  }
-  .btn-google:hover { opacity: 0.9; }
-  .btn-google img { width: 20px; height: 20px; }
+/* LOGIN */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 40px;text-align:center;max-width:380px;width:90%;}
+.login-logo{font-size:44px;margin-bottom:16px;}
+.login-title{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:6px;}
+.login-sub{color:var(--muted);font-size:14px;margin-bottom:32px;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;background:white;color:#1f1f1f;border:none;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:600;cursor:pointer;width:100%;}
+.btn-google img{width:20px;height:20px;}
 
-  /* APP */
-  #app { display: none; }
-  .header {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 14px 32px; display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 50;
-  }
-  .header-left h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
-  .header-left p { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .header-right { display: flex; align-items: center; gap: 14px; }
-  .user-info { display: flex; align-items: center; gap: 8px; }
-  .user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); }
-  .user-name { font-size: 13px; color: var(--muted); }
-  .btn-logout {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;
-  }
-  .btn-logout:hover { color: var(--text); border-color: var(--muted); }
+/* LAYOUT */
+#app{display:none;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;}
+.header h1{font-size:17px;font-weight:700;letter-spacing:-0.02em;}
+.header p{color:var(--muted);font-size:12px;margin-top:2px;}
+.hright{display:flex;align-items:center;gap:12px;}
+.uavatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);}
+.uname{font-size:13px;color:var(--muted);}
+.btn-out{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
 
-  /* NAV */
-  .nav {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 0 32px; display: flex; gap: 4px;
-  }
-  .nav-btn {
-    background: none; border: none; border-bottom: 2px solid transparent;
-    color: var(--muted); padding: 12px 16px; font-size: 14px; cursor: pointer;
-    transition: all 0.15s; border-radius: 8px 8px 0 0;
-  }
-  .nav-btn.active { color: var(--text); border-bottom-color: var(--accent); background: var(--card); font-weight: 600; }
-  .nav-btn:hover:not(.active) { color: var(--text); }
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:4px;}
+.nav-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:11px 16px;font-size:14px;cursor:pointer;border-radius:8px 8px 0 0;transition:all .15s;}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--accent);background:var(--card);font-weight:600;}
 
-  /* CONTENT */
-  .content { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
-  .tab { display: none; }
-  .tab.active { display: block; }
+.content{padding:24px 28px;max-width:1200px;margin:0 auto;}
+.tab{display:none;}.tab.active{display:block;}
 
-  /* CARDS */
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px 24px;
-  }
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .kpi-label { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
-  .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
-  .kpi-sub { color: var(--muted); font-size: 12px; margin-top: 5px; }
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:22px;}
+.kpi-lbl{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;}
+.kpi-val{font-size:24px;font-weight:700;letter-spacing:-0.02em;}
+.kpi-sub{color:var(--muted);font-size:12px;margin-top:4px;}
+.sec-title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text);}
+.sec-title::before{content:'';width:3px;height:18px;background:var(--accent);border-radius:2px;display:block;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-wrap{position:relative;height:220px;margin-top:8px;}
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+/* FILTROS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.filter-select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;outline:none;}
+.filter-select:focus{border-color:var(--accent);}
+.filter-toggle{background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .15s;}
+.filter-toggle.on{background:#4F8EF722;border-color:var(--accent);color:var(--accent);}
+.filter-toggle.on-esposa{background:#A78BFA22;border-color:var(--esposa);color:var(--esposa);}
 
-  .section-title {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text);
-  }
-  .section-title::before {
-    content: ''; width: 3px; height: 18px;
-    background: var(--accent); border-radius: 2px; display: block;
-  }
+/* TABELA */
+table{width:100%;border-collapse:collapse;}
+thead tr th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:500;padding-bottom:10px;text-align:left;}
+th.r,td.r{text-align:right;}
+tbody tr{border-top:1px solid var(--border);transition:background .1s;}
+tbody tr:hover{background:#ffffff06;}
+tbody td{padding:10px 0;font-size:14px;}
 
-  /* TABLE */
-  table { width: 100%; border-collapse: collapse; }
-  thead tr th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; padding-bottom: 10px; }
-  th:first-child, td:first-child { text-align: left; }
-  th:not(:first-child), td:not(:first-child) { text-align: right; }
-  tbody tr { border-top: 1px solid var(--border); }
-  tbody td { padding: 10px 0; font-size: 14px; }
-  .td-center { text-align: center !important; }
+/* BADGE */
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid;}
 
-  /* BADGE */
-  .badge {
-    display: inline-block; border-radius: 6px; padding: 2px 8px;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
-    border: 1px solid;
-  }
+/* BUTTONS */
+.btn{border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid;transition:opacity .15s;}
+.btn:hover{opacity:.8;}
+.btn-green{background:#34D39922;color:var(--green);border-color:#34D39944;}
+.btn-amber{background:#FBBF2422;color:var(--amber);border-color:#FBBF2444;}
+.btn-accent{background:#4F8EF722;color:var(--accent);border-color:#4F8EF744;}
+.btn-red{background:#F8717122;color:var(--red);border-color:#F8717144;}
+.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;}
+.btn-del:hover{color:var(--red);}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.topbar-btns{display:flex;gap:8px;flex-wrap:wrap;}
 
-  /* BUTTONS */
-  .btn {
-    border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: 1px solid; transition: opacity 0.15s;
-  }
-  .btn:hover { opacity: 0.8; }
-  .btn-green { background: #34D39922; color: var(--green); border-color: #34D39944; }
-  .btn-amber { background: #FBBF2422; color: var(--amber); border-color: #FBBF2444; }
-  .btn-accent { background: #4F8EF722; color: var(--accent); border-color: #4F8EF744; }
-  .btn-red { background: #F8717122; color: var(--red); border-color: #F8717144; }
-  .btn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px; }
-  .btn-del:hover { color: var(--red); }
-  .btn-edit { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px; }
-  .btn-edit:hover { color: var(--accent); }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);align-items:center;justify-content:center;z-index:200;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:90%;max-width:440px;max-height:90vh;overflow-y:auto;}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-title{font-size:17px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;}
+.fg{margin-bottom:13px;}
+.flbl{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;}
+.finp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;}
+.finp:focus{border-color:var(--accent);}
+.type-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.type-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
+.type-btn.sel-rec{background:#34D39922;border-color:var(--green);color:var(--green);}
+.type-btn.sel-desp{background:#F8717122;border-color:var(--red);color:var(--red);}
+.type-btn.sel-acc{background:#4F8EF722;border-color:var(--accent);color:var(--accent);}
+.type-btn.sel-esp{background:#A78BFA22;border-color:var(--esposa);color:var(--esposa);}
 
-  .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
-  .top-bar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
-  .top-bar-btns { display: flex; gap: 8px; }
+/* PDF UPLOAD */
+.pdf-drop{border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.pdf-drop:hover,.pdf-drop.drag{border-color:var(--accent);}
+.pdf-drop-icon{font-size:36px;margin-bottom:10px;}
+.pdf-drop-txt{color:var(--muted);font-size:14px;}
+.pdf-drop-sub{color:var(--muted);font-size:12px;margin-top:6px;}
 
-  /* MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-    align-items: center; justify-content: center; z-index: 200;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 28px; width: 90%; max-width: 420px;
-  }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .modal-title { font-size: 17px; font-weight: 700; }
-  .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; line-height: 1; }
-  .form-group { margin-bottom: 14px; }
-  .form-label { color: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
-  .form-input {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; outline: none;
-  }
-  .form-input:focus { border-color: var(--accent); }
-  .type-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-  .type-btn {
-    background: var(--card); border: 1px solid var(--border); color: var(--muted);
-    border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
-    transition: all 0.15s;
-  }
-  .type-btn.selected { background: #4F8EF722; border-color: var(--accent); color: var(--accent); }
+/* PREVIEW PDF */
+.preview-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;}
+.preview-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.preview-row input,.preview-row select{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;outline:none;}
+.preview-row input:focus,.preview-row select:focus{border-color:var(--accent);}
+.preview-row .p-desc{flex:1;min-width:140px;}
+.preview-row .p-val{width:110px;}
+.preview-row .p-date{width:110px;}
+.preview-row .p-cat{width:130px;}
+.preview-chk{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);}
+.preview-actions{display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
 
-  /* TOAST */
-  .toast {
-    position: fixed; bottom: 24px; right: 24px; background: var(--card);
-    border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px;
-    font-size: 14px; z-index: 300; opacity: 0; transition: opacity 0.3s;
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; }
+/* LOADING */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{color:var(--muted);font-size:14px;padding:24px 0;text-align:center;}
 
-  /* LOADING */
-  .loading { color: var(--muted); font-size: 14px; padding: 20px 0; }
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:14px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
 
-  /* CHART */
-  .chart-wrap { position: relative; height: 220px; margin-top: 8px; }
+/* EMPTY */
+.empty{color:var(--muted);font-size:14px;padding:32px 0;text-align:center;}
 
-  /* MES ATUAL */
-  .mes-atual { color: var(--accent); font-size: 10px; margin-left: 6px; }
+/* PESSOA dot */
+.dot-vini{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--vini);margin-right:5px;}
+.dot-esp{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--esposa);margin-right:5px;}
 
-  /* HINTS */
-  .csv-hint { text-align: center; color: var(--muted); font-size: 11px; margin-top: 20px; }
-  .csv-hint code { color: var(--accent); background: #4F8EF711; padding: 1px 5px; border-radius: 4px; }
-
-  @media (max-width: 700px) {
-    .header { padding: 12px 16px; }
-    .nav { padding: 0 8px; }
-    .content { padding: 16px; }
-    .grid-2, .grid-3-1 { grid-template-columns: 1fr; }
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
-  }
+@media(max-width:680px){
+  .header,.nav,.content{padding-left:14px;padding-right:14px;}
+  .grid2{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .filters{gap:7px;}
+}
 </style>
 </head>
 <body>
@@ -205,11 +151,11 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">💰</div>
-    <div class="login-title">Finanças Família</div>
-    <div class="login-sub">Vinicius &amp; Esposa · dados em tempo real</div>
+    <div class="login-logo">💳</div>
+    <div class="login-title">Transações Família</div>
+    <div class="login-sub">Vinicius &amp; Esposa · controle financeiro</div>
     <button class="btn-google" onclick="loginGoogle()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
       Entrar com Google
     </button>
   </div>
@@ -218,623 +164,644 @@
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-left">
-      <h1>💰 Finanças Família</h1>
-      <p id="header-sub">Vinicius &amp; Esposa · <span id="header-ano"></span></p>
+    <div>
+      <h1>💳 Transações Família</h1>
+      <p id="hdr-sub">—</p>
     </div>
-    <div class="header-right">
-      <div class="user-info">
-        <img class="user-avatar" id="user-avatar" src="" alt="">
-        <span class="user-name" id="user-name"></span>
-      </div>
-      <button class="btn-logout" onclick="logout()">Sair</button>
+    <div class="hright">
+      <img class="uavatar" id="uavatar" src="" alt="">
+      <span class="uname" id="uname"></span>
+      <button class="btn-out" onclick="logout()">Sair</button>
     </div>
   </div>
 
   <nav class="nav">
-    <button class="nav-btn active" onclick="showTab('geral', this)">Visão Geral</button>
-    <button class="nav-btn" onclick="showTab('renda', this)">Renda</button>
-    <button class="nav-btn" onclick="showTab('despesas', this)">Despesas</button>
-    <button class="nav-btn" onclick="showTab('investimentos', this)">Investimentos</button>
+    <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" onclick="showTab('transacoes',this)">Transações</button>
+    <button class="nav-btn" onclick="showTab('pdf',this)">Importar PDF</button>
   </nav>
 
   <div class="content">
 
-    <!-- VISÃO GERAL -->
-    <div id="tab-geral" class="tab active">
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab active">
       <div class="kpi-grid">
-        <div class="card"><div class="kpi-label">Renda familiar (mês)</div><div class="kpi-value" id="kpi-renda" style="color:var(--green)">—</div><div class="kpi-sub" id="kpi-renda-sub">—</div></div>
-        <div class="card"><div class="kpi-label">Despesas (mês)</div><div class="kpi-value" id="kpi-desp" style="color:var(--red)">—</div><div class="kpi-sub" id="kpi-desp-sub">—</div></div>
-        <div class="card"><div class="kpi-label">Saldo líquido</div><div class="kpi-value" id="kpi-saldo">—</div><div class="kpi-sub" id="kpi-saldo-sub">—</div></div>
-        <div class="card"><div class="kpi-label">Patrimônio investido</div><div class="kpi-value" id="kpi-invest" style="color:var(--accent)">—</div><div class="kpi-sub" id="kpi-invest-sub">—</div></div>
+        <div class="card"><div class="kpi-lbl">Receitas (mês)</div><div class="kpi-val" id="kpi-rec" style="color:var(--green)">—</div><div class="kpi-sub" id="kpi-rec-sub">—</div></div>
+        <div class="card"><div class="kpi-lbl">Despesas (mês)</div><div class="kpi-val" id="kpi-desp" style="color:var(--red)">—</div><div class="kpi-sub" id="kpi-desp-sub">—</div></div>
+        <div class="card"><div class="kpi-lbl">Saldo</div><div class="kpi-val" id="kpi-saldo">—</div></div>
+        <div class="card"><div class="kpi-lbl">Transações</div><div class="kpi-val" id="kpi-count" style="color:var(--accent)">—</div><div class="kpi-sub" id="kpi-count-sub">—</div></div>
       </div>
-      <div class="card" style="margin-bottom:20px">
-        <div class="section-title">Fluxo anual</div>
-        <div class="chart-wrap"><canvas id="chart-fluxo"></canvas></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+        <select class="filter-select" id="dash-mes" onchange="renderDashboard()">
+          <option value="">Todos os meses</option>
+        </select>
+        <button class="filter-toggle" id="ft-vini" onclick="toggleFiltro('vini')">● Vinicius</button>
+        <button class="filter-toggle on-esposa" id="ft-esp" onclick="toggleFiltro('esposa')">● Esposa</button>
       </div>
+
+      <div class="grid2" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="sec-title">Despesas por categoria</div>
+          <div class="chart-wrap"><canvas id="chart-cat"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="sec-title">Fluxo mensal</div>
+          <div class="chart-wrap"><canvas id="chart-fluxo"></canvas></div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="section-title">Renda por pessoa</div>
-        <div class="chart-wrap"><canvas id="chart-renda-pessoa"></canvas></div>
+        <div class="sec-title">Últimas transações</div>
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Descrição</th><th>Categoria</th><th>Conta</th><th>Pessoa</th><th class="r">Valor</th>
+          </tr></thead>
+          <tbody id="dash-tbody"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- RENDA -->
-    <div id="tab-renda" class="tab">
-      <div class="top-bar">
-        <div>
-          <div class="kpi-label">Total anual acumulado</div>
-          <div class="kpi-value" id="renda-total-anual" style="color:var(--green);font-size:30px">—</div>
+    <!-- TRANSAÇÕES -->
+    <div id="tab-transacoes" class="tab">
+      <div class="topbar">
+        <div class="filters">
+          <select class="filter-select" id="fil-mes" onchange="renderTransacoes()">
+            <option value="">Todos os meses</option>
+          </select>
+          <select class="filter-select" id="fil-tipo" onchange="renderTransacoes()">
+            <option value="">Receitas + Despesas</option>
+            <option value="receita">Só Receitas</option>
+            <option value="despesa">Só Despesas</option>
+          </select>
+          <select class="filter-select" id="fil-conta" onchange="renderTransacoes()">
+            <option value="">Todas as contas</option>
+            <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+          </select>
+          <select class="filter-select" id="fil-pessoa" onchange="renderTransacoes()">
+            <option value="">Todos</option>
+            <option value="vini">Vinicius</option>
+            <option value="esposa">Esposa</option>
+          </select>
         </div>
-        <div class="top-bar-btns">
-          <label class="btn btn-amber" style="cursor:pointer">Importar CSV<input type="file" accept=".csv,.txt" style="display:none" onchange="importRendaCSV(event)"></label>
-        </div>
+        <button class="btn btn-green" onclick="openModal('modal-tx')">+ Nova transação</button>
       </div>
+
+      <!-- Agrupado por categoria -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="sec-title">Por categoria</div>
+        <div id="cat-group"></div>
+      </div>
+
+      <!-- Lista cronológica -->
       <div class="card">
-        <div class="section-title">Renda mensal</div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr>
-              <th>Mês</th>
-              <th style="color:var(--vini)">Vinicius</th>
-              <th style="color:var(--esposa)">Esposa</th>
-              <th>Total</th>
-              <th></th>
-            </tr></thead>
-            <tbody id="renda-tbody"></tbody>
-          </table>
-        </div>
+        <div class="sec-title">Lista cronológica</div>
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Descrição</th><th>Categoria</th><th>Conta</th><th>Pessoa</th><th class="r">Valor</th><th></th>
+          </tr></thead>
+          <tbody id="tx-tbody"></tbody>
+        </table>
+        <div id="tx-empty" class="empty" style="display:none">Nenhuma transação encontrada.</div>
       </div>
-      <div class="csv-hint">CSV: <code>mes,vini,esposa</code> — ex: <code>Jan,28000,22000</code></div>
     </div>
 
-    <!-- DESPESAS -->
-    <div id="tab-despesas" class="tab">
-      <div class="top-bar">
-        <div>
-          <div class="kpi-label">Total mensal</div>
-          <div class="kpi-value" id="desp-total" style="color:var(--red);font-size:30px">—</div>
+    <!-- IMPORTAR PDF -->
+    <div id="tab-pdf" class="tab">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="sec-title">Importar extrato ou fatura em PDF</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">O Claude lê o PDF automaticamente e extrai as transações. Você revisa e confirma antes de salvar.</p>
+
+        <div class="pdf-drop" id="pdf-drop" onclick="document.getElementById('pdf-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event)">
+          <div class="pdf-drop-icon">📄</div>
+          <div class="pdf-drop-txt">Clique ou arraste o PDF aqui</div>
+          <div class="pdf-drop-sub">Extrato Nubank, Bradesco, fatura de cartão…</div>
+          <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="handlePDFFile(event)">
         </div>
-        <div class="top-bar-btns">
-          <label class="btn btn-amber" style="cursor:pointer">Importar CSV<input type="file" accept=".csv,.txt" style="display:none" onchange="importDespCSV(event)"></label>
-          <button class="btn btn-green" onclick="openModal('modal-desp')">+ Adicionar</button>
+
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select class="filter-select" id="pdf-conta">
+            <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+          </select>
+          <select class="filter-select" id="pdf-pessoa">
+            <option value="vini">Vinicius</option>
+            <option value="esposa">Esposa</option>
+          </select>
         </div>
       </div>
-      <div class="grid-2">
-        <div class="card">
-          <div class="section-title">Categorias</div>
-          <table>
-            <thead><tr><th>Categoria</th><th>Valor</th><th class="td-center">Tipo</th><th></th></tr></thead>
-            <tbody id="desp-tbody"></tbody>
-          </table>
-        </div>
-        <div class="card">
-          <div class="section-title">Distribuição</div>
-          <div class="chart-wrap" style="height:260px"><canvas id="chart-desp-pie"></canvas></div>
+
+      <div id="pdf-loading" style="display:none" class="card">
+        <div class="loading-msg"><span class="spinner"></span>Analisando PDF com IA…</div>
+      </div>
+
+      <div id="pdf-preview" style="display:none" class="card">
+        <div class="sec-title">Transações extraídas — revise e confirme</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:12px;">Edite qualquer campo antes de salvar. Desmarque as que não quiser importar.</div>
+        <div class="preview-list" id="preview-list"></div>
+        <div class="preview-actions">
+          <span id="preview-count" style="color:var(--muted);font-size:13px;"></span>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-red" onclick="cancelPreview()">Cancelar</button>
+            <button class="btn btn-green" onclick="savePreview()">Salvar selecionadas</button>
+          </div>
         </div>
       </div>
-      <div class="csv-hint">CSV: <code>categoria,valor,tipo</code> — ex: <code>Moradia,6500,fixo</code></div>
     </div>
 
-    <!-- INVESTIMENTOS -->
-    <div id="tab-investimentos" class="tab">
-      <div class="kpi-grid" style="margin-bottom:20px">
-        <div class="card"><div class="kpi-label">Patrimônio total</div><div class="kpi-value" id="inv-total" style="color:var(--green)">—</div></div>
-        <div class="card"><div class="kpi-label">Rentab. média a.a.</div><div class="kpi-value" id="inv-rent" style="color:var(--accent)">—</div></div>
-        <div class="card"><div class="kpi-label">Rendimento projetado</div><div class="kpi-value" id="inv-proj" style="color:var(--amber)">—</div><div class="kpi-sub">estimativa anual</div></div>
-      </div>
-      <div class="top-bar" style="margin-bottom:16px">
-        <div></div>
-        <div class="top-bar-btns">
-          <label class="btn btn-amber" style="cursor:pointer">Importar CSV<input type="file" accept=".csv,.txt" style="display:none" onchange="importInvCSV(event)"></label>
-          <button class="btn btn-green" onclick="openModal('modal-inv')">+ Adicionar</button>
-        </div>
-      </div>
-      <div class="grid-3-1">
-        <div class="card">
-          <div class="section-title">Carteira</div>
-          <table>
-            <thead><tr><th>Aplicação</th><th>Valor</th><th class="td-center">Tipo</th><th>% a.a.</th><th></th></tr></thead>
-            <tbody id="inv-tbody"></tbody>
-          </table>
-        </div>
-        <div class="card">
-          <div class="section-title">Alocação</div>
-          <div class="chart-wrap" style="height:260px"><canvas id="chart-inv-pie"></canvas></div>
-        </div>
-      </div>
-      <div class="csv-hint">CSV: <code>nome,valor,tipo,rentabilidade</code> — ex: <code>Tesouro IPCA,85000,Renda Fixa,12.5</code></div>
-    </div>
-
-  </div><!-- /content -->
-</div><!-- /app -->
-
-<!-- MODAL DESPESA -->
-<div class="modal-overlay" id="modal-desp">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Nova despesa</span>
-      <button class="modal-close" onclick="closeModal('modal-desp')">×</button>
-    </div>
-    <div class="form-group"><label class="form-label">Categoria</label><input class="form-input" id="desp-cat" placeholder="ex: Academia"></div>
-    <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="desp-val" type="number" placeholder="0"></div>
-    <div class="form-group">
-      <label class="form-label">Tipo</label>
-      <div class="type-btns">
-        <button class="type-btn selected" onclick="selectTipo(this,'desp-tipo')" data-val="fixo">Fixo</button>
-        <button class="type-btn" onclick="selectTipo(this,'desp-tipo')" data-val="variavel">Variável</button>
-      </div>
-      <input type="hidden" id="desp-tipo" value="fixo">
-    </div>
-    <button class="btn btn-green" style="width:100%;margin-top:8px" onclick="addDespesa()">Salvar despesa</button>
   </div>
 </div>
 
-<!-- MODAL INVESTIMENTO -->
-<div class="modal-overlay" id="modal-inv">
+<!-- MODAL NOVA TRANSAÇÃO -->
+<div class="modal-overlay" id="modal-tx">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Nova aplicação</span>
-      <button class="modal-close" onclick="closeModal('modal-inv')">×</button>
+    <div class="modal-hdr">
+      <span class="modal-title">Nova transação</span>
+      <button class="modal-close" onclick="closeModal('modal-tx')">×</button>
     </div>
-    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="inv-nome" placeholder="ex: Tesouro IPCA 2035"></div>
-    <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="inv-val" type="number" placeholder="0"></div>
-    <div class="form-group"><label class="form-label">Rentabilidade % a.a.</label><input class="form-input" id="inv-rent-input" type="number" placeholder="12.5" step="0.1"></div>
-    <div class="form-group">
-      <label class="form-label">Tipo</label>
+    <div class="fg">
+      <label class="flbl">Tipo</label>
       <div class="type-btns">
-        <button class="type-btn selected" onclick="selectTipo(this,'inv-tipo')" data-val="Renda Fixa">Renda Fixa</button>
-        <button class="type-btn" onclick="selectTipo(this,'inv-tipo')" data-val="Renda Variável">Renda Variável</button>
-        <button class="type-btn" onclick="selectTipo(this,'inv-tipo')" data-val="Liquidez">Liquidez</button>
+        <button class="type-btn sel-rec" onclick="selTipo(this,'receita')" data-val="receita">↑ Receita</button>
+        <button class="type-btn" onclick="selTipo(this,'despesa')" data-val="despesa">↓ Despesa</button>
       </div>
-      <input type="hidden" id="inv-tipo" value="Renda Fixa">
+      <input type="hidden" id="tx-tipo" value="receita">
     </div>
-    <button class="btn btn-green" style="width:100%;margin-top:8px" onclick="addInvestimento()">Salvar aplicação</button>
+    <div class="fg"><label class="flbl">Descrição</label><input class="finp" id="tx-desc" placeholder="ex: Supermercado Pão de Açúcar"></div>
+    <div class="fg"><label class="flbl">Valor (R$)</label><input class="finp" id="tx-val" type="number" placeholder="0.00" step="0.01"></div>
+    <div class="fg"><label class="flbl">Data</label><input class="finp" id="tx-data" type="date"></div>
+    <div class="fg">
+      <label class="flbl">Categoria</label>
+      <select class="finp" id="tx-cat">
+        <option>Alimentação</option><option>Moradia</option><option>Saúde</option>
+        <option>Educação</option><option>Transporte</option><option>Lazer</option>
+        <option>Vestuário</option><option>Assinaturas</option><option>Salário</option>
+        <option>Investimento</option><option>Outros</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="flbl">Conta</label>
+      <select class="finp" id="tx-conta">
+        <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="flbl">Pessoa</label>
+      <div class="type-btns">
+        <button class="type-btn sel-acc" onclick="selPessoa(this,'vini')" data-val="vini">● Vinicius</button>
+        <button class="type-btn" onclick="selPessoa(this,'esposa')" data-val="esposa">● Esposa</button>
+      </div>
+      <input type="hidden" id="tx-pessoa" value="vini">
+    </div>
+    <button class="btn btn-green" style="width:100%;margin-top:6px" onclick="addTransacao()">Salvar transação</button>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Firebase config ──────────────────────────────────────────────────────────
+// ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyCpC2Azj1NBYlT2Axxi7RGIDrP7Oo8qp1Q",
   authDomain: "financas-familia-4e7af.firebaseapp.com",
   projectId: "financas-familia-4e7af",
   storageBucket: "financas-familia-4e7af.firebasestorage.app",
   messagingSenderId: "763689535366",
-  appId: "1:763689535366:web:e898ce5e25e66caf2d0e07",
-  measurementId: "G-9HDSRB28D3"
+  appId: "1:763689535366:web:e898ce5e25e66caf2d0e07"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// ── Constants ────────────────────────────────────────────────────────────────
-const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-const MES_ATUAL = new Date().getMonth();
-const ANO = new Date().getFullYear();
-
-// Cores Chart.js
-const COR = {
-  accent:'#4F8EF7', green:'#34D399', red:'#F87171', amber:'#FBBF24',
-  vini:'#4F8EF7', esposa:'#A78BFA', muted:'#8A94A6', border:'#2A3348',
-  pie:['#4F8EF7','#A78BFA','#34D399','#FBBF24','#F87171','#60A5FA','#6EE7B7']
-};
-
-// Estado local (mirror do Firestore para charts)
-let STATE = { renda: [], despesas: [], investimentos: [] };
+// ── State ─────────────────────────────────────────────────────────────────────
+let ALL_TX = [];
 let charts = {};
+let filtros = { vini: true, esposa: true };
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
-function loginGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => toast('Erro no login: ' + e.message, true));
-}
-
-function logout() {
-  auth.signOut();
-}
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('user-name').textContent = user.displayName?.split(' ')[0] || user.email;
-    document.getElementById('user-avatar').src = user.photoURL || '';
-    document.getElementById('header-ano').textContent = ANO;
-    initData();
-    listenData();
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-  }
-});
-
-// ── Firestore listeners ──────────────────────────────────────────────────────
-function listenData() {
-  // Renda
-  db.collection('renda').orderBy('mesIdx').onSnapshot(snap => {
-    STATE.renda = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderRenda();
-    renderGeral();
-  });
-  // Despesas
-  db.collection('despesas').onSnapshot(snap => {
-    STATE.despesas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderDespesas();
-    renderGeral();
-  });
-  // Investimentos
-  db.collection('investimentos').onSnapshot(snap => {
-    STATE.investimentos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderInvestimentos();
-    renderGeral();
-  });
-}
-
-// Inicializa renda dos 12 meses se não existir
-async function initData() {
-  const snap = await db.collection('renda').get();
-  if (snap.empty) {
-    const batch = db.batch();
-    MESES.forEach((m, i) => {
-      const ref = db.collection('renda').doc(m);
-      batch.set(ref, { mes: m, mesIdx: i, vini: 0, esposa: 0 });
-    });
-    await batch.commit();
-  }
-}
-
-// ── Formatação ────────────────────────────────────────────────────────────────
-function fmt(v) {
-  return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 }).format(v);
-}
-function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
-
-// ── Toast ────────────────────────────────────────────────────────────────────
-function toast(msg, err = false) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.style.borderColor = err ? '#F87171' : '#34D399';
-  el.style.color = err ? '#F87171' : '#34D399';
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-// ── Nav ───────────────────────────────────────────────────────────────────────
-function showTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-}
-
-// ── Modal ────────────────────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-function selectTipo(btn, hiddenId) {
-  btn.closest('.type-btns').querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  document.getElementById(hiddenId).value = btn.dataset.val;
-}
-
-// ── Badge helper ──────────────────────────────────────────────────────────────
-function badge(text, color) {
-  return `<span class="badge" style="background:${color}22;color:${color};border-color:${color}44">${text}</span>`;
-}
-
-// ── RENDA ────────────────────────────────────────────────────────────────────
-function renderRenda() {
-  const tbody = document.getElementById('renda-tbody');
-  let totalAnual = 0;
-  tbody.innerHTML = '';
-  STATE.renda.forEach(r => {
-    const total = (r.vini || 0) + (r.esposa || 0);
-    totalAnual += total;
-    const isCurrent = r.mesIdx === MES_ATUAL;
-    const opacity = r.mesIdx > MES_ATUAL ? '0.4' : '1';
-    tbody.innerHTML += `
-      <tr style="opacity:${opacity}" id="renda-row-${r.id}">
-        <td style="font-weight:${isCurrent?700:400}">
-          ${r.mes}${isCurrent ? '<span class="mes-atual">●</span>' : ''}
-        </td>
-        <td style="color:var(--vini);font-weight:600;text-align:right" id="renda-vini-${r.id}">
-          ${r.vini > 0 ? fmt(r.vini) : '—'}
-        </td>
-        <td style="color:var(--esposa);font-weight:600;text-align:right" id="renda-esposa-${r.id}">
-          ${r.esposa > 0 ? fmt(r.esposa) : '—'}
-        </td>
-        <td style="text-align:right">${total > 0 ? fmt(total) : '—'}</td>
-        <td>
-          ${r.mesIdx <= MES_ATUAL ? `<button class="btn-edit" onclick="editRenda('${r.id}',${r.vini},${r.esposa})">✎</button>` : ''}
-        </td>
-      </tr>`;
-  });
-  document.getElementById('renda-total-anual').textContent = fmt(totalAnual);
-}
-
-function editRenda(id, vini, esposa) {
-  const row = document.getElementById('renda-row-' + id);
-  const vCell = document.getElementById('renda-vini-' + id);
-  const eCell = document.getElementById('renda-esposa-' + id);
-  vCell.innerHTML = `<input type="number" value="${vini}" id="ev-${id}" style="width:110px;background:var(--bg);border:1px solid var(--vini);border-radius:6px;padding:4px 8px;color:var(--vini);font-size:13px;text-align:right">`;
-  eCell.innerHTML = `<input type="number" value="${esposa}" id="ee-${id}" style="width:110px;background:var(--bg);border:1px solid var(--esposa);border-radius:6px;padding:4px 8px;color:var(--esposa);font-size:13px;text-align:right">`;
-  row.cells[4].innerHTML = `<button class="btn btn-green" style="padding:4px 10px;font-size:12px" onclick="saveRenda('${id}')">OK</button>`;
-}
-
-async function saveRenda(id) {
-  const vini   = parseFloat(document.getElementById('ev-' + id).value) || 0;
-  const esposa = parseFloat(document.getElementById('ee-' + id).value) || 0;
-  await db.collection('renda').doc(id).update({ vini, esposa });
-  toast('Renda atualizada ✓');
-}
-
-async function importRendaCSV(event) {
-  const rows = await readCSV(event);
-  const batch = db.batch();
-  rows.forEach(r => {
-    const mesKey = (r.mes || r.month || '').trim();
-    const idx = MESES.findIndex(m => m.toLowerCase() === mesKey.toLowerCase().slice(0,3));
-    if (idx !== -1) {
-      const ref = db.collection('renda').doc(MESES[idx]);
-      batch.update(ref, {
-        vini:   parseFloat((r.vini   || r.vinicius || '0').replace(',','.')),
-        esposa: parseFloat((r.esposa || r.wife     || '0').replace(',','.'))
-      });
-    }
-  });
-  await batch.commit();
-  toast('Renda importada ✓');
-}
-
-// ── DESPESAS ─────────────────────────────────────────────────────────────────
-function renderDespesas() {
-  const tbody = document.getElementById('desp-tbody');
-  let total = 0;
-  tbody.innerHTML = '';
-  STATE.despesas.forEach(d => {
-    total += d.valor || 0;
-    const cor = d.tipo === 'fixo' ? 'var(--accent)' : 'var(--amber)';
-    tbody.innerHTML += `
-      <tr>
-        <td>${d.categoria}</td>
-        <td style="color:var(--red);font-weight:600;text-align:right">${fmt(d.valor)}</td>
-        <td class="td-center">${badge(d.tipo, d.tipo==='fixo'?'#4F8EF7':'#FBBF24')}</td>
-        <td><div class="row-actions"><button class="btn-del" onclick="delDoc('despesas','${d.id}')">×</button></div></td>
-      </tr>`;
-  });
-  document.getElementById('desp-total').textContent = fmt(total);
-  renderDespPie();
-}
-
-async function addDespesa() {
-  const cat = document.getElementById('desp-cat').value.trim();
-  const val = parseFloat(document.getElementById('desp-val').value);
-  const tipo = document.getElementById('desp-tipo').value;
-  if (!cat || !val) { toast('Preencha todos os campos', true); return; }
-  await db.collection('despesas').add({ categoria: cat, valor: val, tipo });
-  closeModal('modal-desp');
-  document.getElementById('desp-cat').value = '';
-  document.getElementById('desp-val').value = '';
-  toast('Despesa adicionada ✓');
-}
-
-async function importDespCSV(event) {
-  const rows = await readCSV(event);
-  const batch = db.batch();
-  rows.forEach(r => {
-    const val = parseFloat((r.valor || r.value || '0').replace(',','.'));
-    if (val > 0) batch.set(db.collection('despesas').doc(), {
-      categoria: r.categoria || r.category || 'Importado',
-      valor: val, tipo: r.tipo || r.type || 'variavel'
-    });
-  });
-  await batch.commit();
-  toast('Despesas importadas ✓');
-}
-
-// ── INVESTIMENTOS ─────────────────────────────────────────────────────────────
-function renderInvestimentos() {
-  const tbody = document.getElementById('inv-tbody');
-  let total = 0, rentPonderada = 0;
-  tbody.innerHTML = '';
-  STATE.investimentos.forEach(inv => {
-    total += inv.valor || 0;
-    rentPonderada += (inv.rentabilidade || 0) * (inv.valor || 0);
-    const corTipo = { 'Renda Fixa': '#34D399', 'Renda Variável': '#4F8EF7', 'Liquidez': '#FBBF24' };
-    const cor = corTipo[inv.tipo] || '#4F8EF7';
-    tbody.innerHTML += `
-      <tr>
-        <td>${inv.nome}</td>
-        <td style="color:var(--green);font-weight:600;text-align:right">${fmt(inv.valor)}</td>
-        <td class="td-center">${badge(inv.tipo, cor)}</td>
-        <td style="color:var(--accent);text-align:right">${pct(inv.rentabilidade||0)}</td>
-        <td><div class="row-actions"><button class="btn-del" onclick="delDoc('investimentos','${inv.id}')">×</button></div></td>
-      </tr>`;
-  });
-  const rentMedia = total > 0 ? rentPonderada / total : 0;
-  document.getElementById('inv-total').textContent = fmt(total);
-  document.getElementById('inv-rent').textContent = pct(rentMedia);
-  document.getElementById('inv-proj').textContent = fmt(total * rentMedia / 100);
-  renderInvPie();
-}
-
-async function addInvestimento() {
-  const nome = document.getElementById('inv-nome').value.trim();
-  const val  = parseFloat(document.getElementById('inv-val').value);
-  const rent = parseFloat(document.getElementById('inv-rent-input').value) || 0;
-  const tipo = document.getElementById('inv-tipo').value;
-  if (!nome || !val) { toast('Preencha todos os campos', true); return; }
-  await db.collection('investimentos').add({ nome, valor: val, rentabilidade: rent, tipo });
-  closeModal('modal-inv');
-  document.getElementById('inv-nome').value = '';
-  document.getElementById('inv-val').value = '';
-  document.getElementById('inv-rent-input').value = '';
-  toast('Aplicação adicionada ✓');
-}
-
-async function importInvCSV(event) {
-  const rows = await readCSV(event);
-  const batch = db.batch();
-  rows.forEach(r => {
-    const val = parseFloat((r.valor || r.value || '0').replace(',','.'));
-    if (val > 0) batch.set(db.collection('investimentos').doc(), {
-      nome: r.nome || r.name || 'Importado',
-      valor: val,
-      tipo: r.tipo || r.type || 'Renda Fixa',
-      rentabilidade: parseFloat((r.rentabilidade || r.return || '0').replace(',','.'))
-    });
-  });
-  await batch.commit();
-  toast('Investimentos importados ✓');
-}
-
-// ── DELETE genérico ───────────────────────────────────────────────────────────
-async function delDoc(col, id) {
-  if (!confirm('Remover este item?')) return;
-  await db.collection(col).doc(id).delete();
-  toast('Removido ✓');
-}
-
-// ── VISÃO GERAL ───────────────────────────────────────────────────────────────
-function renderGeral() {
-  const rendaMes = STATE.renda.find(r => r.mesIdx === MES_ATUAL) || { vini:0, esposa:0 };
-  const totalRenda = (rendaMes.vini||0) + (rendaMes.esposa||0);
-  const totalDesp  = STATE.despesas.reduce((a,d) => a + (d.valor||0), 0);
-  const totalInv   = STATE.investimentos.reduce((a,i) => a + (i.valor||0), 0);
-  const saldo      = totalRenda - totalDesp;
-  const txPoup     = totalRenda > 0 ? ((saldo/totalRenda)*100).toFixed(0) : 0;
-
-  document.getElementById('kpi-renda').textContent = fmt(totalRenda);
-  document.getElementById('kpi-renda-sub').textContent = `Vini: ${fmt(rendaMes.vini||0)} · Esposa: ${fmt(rendaMes.esposa||0)}`;
-  document.getElementById('kpi-desp').textContent = fmt(totalDesp);
-  document.getElementById('kpi-desp-sub').textContent = `${STATE.despesas.length} categorias`;
-  document.getElementById('kpi-saldo').textContent = fmt(saldo);
-  document.getElementById('kpi-saldo').style.color = saldo >= 0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('kpi-saldo-sub').textContent = `Taxa de poupança: ${txPoup}%`;
-  document.getElementById('kpi-invest').textContent = fmt(totalInv);
-  document.getElementById('kpi-invest-sub').textContent = `${STATE.investimentos.length} aplicações`;
-
-  renderFluxoChart(totalDesp);
-  renderRendaPessoaChart();
-}
-
-// ── CHARTS ────────────────────────────────────────────────────────────────────
-const chartDefaults = {
-  plugins: { legend: { labels: { color: '#8A94A6', font: { size: 12 } } } },
-  scales: {
-    x: { grid: { color: '#2A3348' }, ticks: { color: '#8A94A6' } },
-    y: { grid: { color: '#2A3348' }, ticks: { color: '#8A94A6', callback: v => `${(v/1000).toFixed(0)}k` } }
-  }
+const MESES_NOME = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const CATEGORIAS = ["Alimentação","Moradia","Saúde","Educação","Transporte","Lazer","Vestuário","Assinaturas","Salário","Investimento","Outros"];
+const CAT_CORES  = {
+  "Alimentação":"#F87171","Moradia":"#4F8EF7","Saúde":"#34D399","Educação":"#A78BFA",
+  "Transporte":"#FBBF24","Lazer":"#60A5FA","Vestuário":"#F472B6","Assinaturas":"#818CF8",
+  "Salário":"#6EE7B7","Investimento":"#FCD34D","Outros":"#8A94A6"
 };
+const CONTA_CORES = { "Nubank":"#820AD1","Bradesco":"#CC0000","Outros":"#8A94A6" };
 
-function renderFluxoChart(totalDesp) {
-  const meses = STATE.renda.filter(r => r.mesIdx <= MES_ATUAL);
-  const labels = meses.map(r => r.mes);
-  const renda  = meses.map(r => (r.vini||0)+(r.esposa||0));
-  const desp   = meses.map(() => totalDesp);
-  const saldo  = meses.map(r => (r.vini||0)+(r.esposa||0) - totalDesp);
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function loginGoogle(){
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast(e.message,true));
+}
+function logout(){ auth.signOut(); }
 
-  if (charts.fluxo) charts.fluxo.destroy();
-  const ctx = document.getElementById('chart-fluxo').getContext('2d');
-  charts.fluxo = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Renda', data:renda, backgroundColor:COR.green+'BB', borderRadius:4 },
-        { label:'Despesas', data:desp, backgroundColor:COR.red+'BB', borderRadius:4 },
-        { label:'Saldo', data:saldo, backgroundColor:COR.accent+'BB', borderRadius:4 }
-      ]
-    },
-    options: { ...chartDefaults, responsive:true, maintainAspectRatio:false, plugins:{ ...chartDefaults.plugins } }
+auth.onAuthStateChanged(u => {
+  if(u){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('uname').textContent=u.displayName?.split(' ')[0]||u.email;
+    document.getElementById('uavatar').src=u.photoURL||'';
+    document.getElementById('hdr-sub').textContent='Vinicius & Esposa · '+new Date().getFullYear();
+    initTxDate();
+    listenTx();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+});
+
+function initTxDate(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('tx-data').value = today;
+}
+
+// ── Firestore listener ────────────────────────────────────────────────────────
+function listenTx(){
+  db.collection('transacoes').orderBy('data','desc').onSnapshot(snap => {
+    ALL_TX = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    populateMesFilter();
+    renderDashboard();
+    renderTransacoes();
   });
 }
 
-function renderRendaPessoaChart() {
-  const meses = STATE.renda.filter(r => r.mesIdx <= MES_ATUAL);
-  const labels = meses.map(r => r.mes);
-  if (charts.rendaPessoa) charts.rendaPessoa.destroy();
-  const ctx = document.getElementById('chart-renda-pessoa').getContext('2d');
-  charts.rendaPessoa = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label:'Vinicius', data:meses.map(r=>r.vini||0), borderColor:COR.vini, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:3 },
-        { label:'Esposa',   data:meses.map(r=>r.esposa||0), borderColor:COR.esposa, backgroundColor:'transparent', tension:0.3, borderWidth:2, pointRadius:3 }
-      ]
-    },
-    options: { ...chartDefaults, responsive:true, maintainAspectRatio:false }
+// ── Filtro mês ────────────────────────────────────────────────────────────────
+function populateMesFilter(){
+  const meses = [...new Set(ALL_TX.map(t => t.data?.slice(0,7)))].sort().reverse();
+  ['dash-mes','fil-mes'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todos os meses</option>';
+    meses.forEach(m => {
+      const [y,mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = `${MESES_NOME[parseInt(mo)-1]} ${y}`;
+      sel.appendChild(opt);
+    });
+    sel.value = cur;
   });
 }
 
-function renderDespPie() {
-  if (!STATE.despesas.length) return;
-  if (charts.despPie) charts.despPie.destroy();
-  const ctx = document.getElementById('chart-desp-pie').getContext('2d');
-  charts.despPie = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: STATE.despesas.map(d => d.categoria),
-      datasets: [{ data: STATE.despesas.map(d => d.valor), backgroundColor: COR.pie, borderWidth:2, borderColor:'#1E2535' }]
+function txFiltradas(mesSel='', tipoSel='', contaSel='', pessoaSel='', useFiltroToggle=false){
+  return ALL_TX.filter(t => {
+    if(mesSel && !t.data?.startsWith(mesSel)) return false;
+    if(tipoSel && t.tipo !== tipoSel) return false;
+    if(contaSel && t.conta !== contaSel) return false;
+    if(pessoaSel && t.pessoa !== pessoaSel) return false;
+    if(useFiltroToggle){
+      if(t.pessoa==='vini' && !filtros.vini) return false;
+      if(t.pessoa==='esposa' && !filtros.esposa) return false;
+    }
+    return true;
+  });
+}
+
+// ── Toggle pessoa dashboard ───────────────────────────────────────────────────
+function toggleFiltro(p){
+  filtros[p] = !filtros[p];
+  const id = p==='vini' ? 'ft-vini' : 'ft-esp';
+  const btn = document.getElementById(id);
+  if(p==='vini') btn.className = 'filter-toggle' + (filtros.vini?' on':'');
+  else btn.className = 'filter-toggle' + (filtros.esposa?' on-esposa':'');
+  renderDashboard();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const mes = document.getElementById('dash-mes').value;
+  const tx  = txFiltradas(mes,'','','',true);
+
+  const rec  = tx.filter(t=>t.tipo==='receita').reduce((a,t)=>a+(t.valor||0),0);
+  const desp = tx.filter(t=>t.tipo==='despesa').reduce((a,t)=>a+(t.valor||0),0);
+  const saldo= rec - desp;
+
+  const viniDesp  = tx.filter(t=>t.tipo==='despesa'&&t.pessoa==='vini').reduce((a,t)=>a+t.valor,0);
+  const esposaDesp= tx.filter(t=>t.tipo==='despesa'&&t.pessoa==='esposa').reduce((a,t)=>a+t.valor,0);
+
+  document.getElementById('kpi-rec').textContent   = fmt(rec);
+  document.getElementById('kpi-rec-sub').textContent = `Vini: ${fmt(tx.filter(t=>t.tipo==='receita'&&t.pessoa==='vini').reduce((a,t)=>a+t.valor,0))} · Esposa: ${fmt(tx.filter(t=>t.tipo==='receita'&&t.pessoa==='esposa').reduce((a,t)=>a+t.valor,0))}`;
+  document.getElementById('kpi-desp').textContent  = fmt(desp);
+  document.getElementById('kpi-desp-sub').textContent = `Vini: ${fmt(viniDesp)} · Esposa: ${fmt(esposaDesp)}`;
+  const ks = document.getElementById('kpi-saldo');
+  ks.textContent = fmt(saldo);
+  ks.style.color = saldo>=0?'var(--green)':'var(--red)';
+  document.getElementById('kpi-count').textContent = tx.length;
+  document.getElementById('kpi-count-sub').textContent = `${tx.filter(t=>t.tipo==='receita').length} receitas · ${tx.filter(t=>t.tipo==='despesa').length} despesas`;
+
+  renderCatChart(tx);
+  renderFluxoChart();
+  renderDashTable(tx.slice(0,8));
+}
+
+function renderDashTable(tx){
+  const tbody = document.getElementById('dash-tbody');
+  tbody.innerHTML = tx.length ? tx.map(t => rowHTML(t,false)).join('') : '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Sem transações.</td></tr>';
+}
+
+function renderCatChart(tx){
+  const desp = tx.filter(t=>t.tipo==='despesa');
+  const map={};
+  desp.forEach(t=>{ map[t.categoria]=(map[t.categoria]||0)+t.valor; });
+  const labels=Object.keys(map);
+  const values=Object.values(map);
+  const cores=labels.map(l=>CAT_CORES[l]||'#8A94A6');
+
+  if(charts.cat) charts.cat.destroy();
+  const ctx=document.getElementById('chart-cat').getContext('2d');
+  charts.cat = new Chart(ctx,{
+    type:'doughnut',
+    data:{ labels, datasets:[{ data:values, backgroundColor:cores, borderWidth:2, borderColor:'#1E2535' }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#8A94A6', font:{size:11}, boxWidth:12 } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)}` } } } }
+  });
+}
+
+function renderFluxoChart(){
+  // Agrupa por mês (últimos 6)
+  const map={};
+  ALL_TX.forEach(t=>{
+    const m=t.data?.slice(0,7); if(!m) return;
+    if(!map[m]) map[m]={rec:0,desp:0};
+    if(t.tipo==='receita') map[m].rec+=t.valor||0;
+    else map[m].desp+=t.valor||0;
+  });
+  const keys=Object.keys(map).sort().slice(-6);
+  const labels=keys.map(k=>{ const [y,mo]=k.split('-'); return MESES_NOME[parseInt(mo)-1]; });
+
+  if(charts.fluxo) charts.fluxo.destroy();
+  const ctx=document.getElementById('chart-fluxo').getContext('2d');
+  charts.fluxo = new Chart(ctx,{
+    type:'bar',
+    data:{ labels,
+      datasets:[
+        { label:'Receitas', data:keys.map(k=>map[k].rec), backgroundColor:'#34D39988', borderRadius:4 },
+        { label:'Despesas', data:keys.map(k=>map[k].desp), backgroundColor:'#F8717188', borderRadius:4 }
+      ]
     },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend: { position:'bottom', labels:{ color:'#8A94A6', font:{size:11}, boxWidth:12 } } }
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#8A94A6', font:{size:12} } } },
+      scales:{
+        x:{ grid:{color:'#2A3348'}, ticks:{color:'#8A94A6'} },
+        y:{ grid:{color:'#2A3348'}, ticks:{color:'#8A94A6', callback:v=>`${(v/1000).toFixed(0)}k`} }
+      }
     }
   });
 }
 
-function renderInvPie() {
-  if (!STATE.investimentos.length) return;
-  const map = {};
-  STATE.investimentos.forEach(i => { map[i.tipo] = (map[i.tipo]||0) + i.valor; });
-  const labels = Object.keys(map);
-  const values = Object.values(map);
-  const corMap = { 'Renda Fixa': COR.green, 'Renda Variável': COR.accent, 'Liquidez': COR.amber };
-  const cores = labels.map(l => corMap[l] || COR.accent);
+// ── TRANSAÇÕES ────────────────────────────────────────────────────────────────
+function renderTransacoes(){
+  const mes    = document.getElementById('fil-mes').value;
+  const tipo   = document.getElementById('fil-tipo').value;
+  const conta  = document.getElementById('fil-conta').value;
+  const pessoa = document.getElementById('fil-pessoa').value;
+  const tx = txFiltradas(mes,tipo,conta,pessoa,false);
 
-  if (charts.invPie) charts.invPie.destroy();
-  const ctx = document.getElementById('chart-inv-pie').getContext('2d');
-  charts.invPie = new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data:values, backgroundColor:cores, borderWidth:2, borderColor:'#1E2535' }] },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend: { position:'bottom', labels:{ color:'#8A94A6', font:{size:11}, boxWidth:12 } } }
-    }
-  });
+  // Agrupado por categoria
+  const catDiv = document.getElementById('cat-group');
+  const map={};
+  tx.filter(t=>t.tipo==='despesa').forEach(t=>{ map[t.categoria]=(map[t.categoria]||0)+t.valor; });
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length){
+    catDiv.innerHTML = sorted.map(([cat,val])=>{
+      const cor=CAT_CORES[cat]||'#8A94A6';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${cor};display:inline-block"></span>
+          <span style="font-size:14px">${cat}</span>
+        </div>
+        <span style="font-weight:600;color:var(--red)">${fmt(val)}</span>
+      </div>`;
+    }).join('');
+  } else {
+    catDiv.innerHTML='<div style="color:var(--muted);font-size:14px;padding:16px 0">Nenhuma despesa no período.</div>';
+  }
+
+  // Lista cronológica
+  const tbody=document.getElementById('tx-tbody');
+  const empty=document.getElementById('tx-empty');
+  if(tx.length){
+    tbody.innerHTML=tx.map(t=>rowHTML(t,true)).join('');
+    empty.style.display='none';
+  } else {
+    tbody.innerHTML='';
+    empty.style.display='block';
+  }
 }
 
-// ── CSV parser ────────────────────────────────────────────────────────────────
-function readCSV(event) {
-  return new Promise(res => {
-    const file = event.target.files[0];
-    if (!file) return res([]);
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const lines = ev.target.result.trim().split('\n').filter(Boolean);
-        const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase());
-        const rows = lines.slice(1).map(l => {
-          const cols = l.split(/[,;]/);
-          const obj = {};
-          header.forEach((h,i) => obj[h] = (cols[i]||'').trim());
-          return obj;
-        });
-        res(rows);
-      } catch { res([]); }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+function rowHTML(t, showDel){
+  const isRec = t.tipo==='receita';
+  const cor = isRec?'var(--green)':'var(--red)';
+  const sinal = isRec?'+':'-';
+  const pessoaDot = t.pessoa==='vini'
+    ? `<span class="dot-vini"></span>Vinicius`
+    : `<span class="dot-esp"></span>Esposa`;
+  const contaCor = CONTA_CORES[t.conta]||'#8A94A6';
+  const delBtn = showDel ? `<button class="btn-del" onclick="delTx('${t.id}')">×</button>` : '';
+  return `<tr>
+    <td style="color:var(--muted)">${fmtDate(t.data)}</td>
+    <td>${t.descricao||'—'}</td>
+    <td><span class="badge" style="background:${CAT_CORES[t.categoria]||'#8A94A6'}22;color:${CAT_CORES[t.categoria]||'#8A94A6'};border-color:${CAT_CORES[t.categoria]||'#8A94A6'}44">${t.categoria||'—'}</span></td>
+    <td><span class="badge" style="background:${contaCor}22;color:${contaCor};border-color:${contaCor}44">${t.conta||'—'}</span></td>
+    <td>${pessoaDot}</td>
+    <td class="r" style="color:${cor};font-weight:600">${sinal}${fmt(t.valor||0)}</td>
+    ${showDel?`<td>${delBtn}</td>`:''}
+  </tr>`;
+}
+
+async function delTx(id){
+  if(!confirm('Remover esta transação?')) return;
+  await db.collection('transacoes').doc(id).delete();
+  toast('Removida ✓');
+}
+
+// ── NOVA TRANSAÇÃO ────────────────────────────────────────────────────────────
+async function addTransacao(){
+  const desc  = document.getElementById('tx-desc').value.trim();
+  const val   = parseFloat(document.getElementById('tx-val').value);
+  const data  = document.getElementById('tx-data').value;
+  const tipo  = document.getElementById('tx-tipo').value;
+  const cat   = document.getElementById('tx-cat').value;
+  const conta = document.getElementById('tx-conta').value;
+  const pessoa= document.getElementById('tx-pessoa').value;
+  if(!desc||!val||!data){ toast('Preencha todos os campos',true); return; }
+  await db.collection('transacoes').add({ descricao:desc, valor:val, data, tipo, categoria:cat, conta, pessoa, criadoEm:new Date().toISOString() });
+  closeModal('modal-tx');
+  document.getElementById('tx-desc').value='';
+  document.getElementById('tx-val').value='';
+  toast('Transação salva ✓');
+}
+
+function selTipo(btn, val){
+  btn.closest('.type-btns').querySelectorAll('.type-btn').forEach(b=>{ b.className='type-btn'; });
+  btn.className='type-btn ' + (val==='receita'?'sel-rec':'sel-desp');
+  document.getElementById('tx-tipo').value=val;
+}
+function selPessoa(btn,val){
+  btn.closest('.type-btns').querySelectorAll('.type-btn').forEach(b=>{ b.className='type-btn'; });
+  btn.className='type-btn ' + (val==='vini'?'sel-acc':'sel-esp');
+  document.getElementById('tx-pessoa').value=val;
+}
+
+// ── PDF ───────────────────────────────────────────────────────────────────────
+let previewData = [];
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('pdf-drop').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if(file&&file.type==='application/pdf') processPDF(file);
+  else toast('Envie um arquivo PDF',true);
+}
+
+function handlePDFFile(e){
+  const file=e.target.files[0];
+  if(file) processPDF(file);
+}
+
+async function processPDF(file){
+  document.getElementById('pdf-loading').style.display='block';
+  document.getElementById('pdf-preview').style.display='none';
+
+  try {
+    const base64 = await fileToBase64(file);
+    const conta  = document.getElementById('pdf-conta').value;
+    const pessoa = document.getElementById('pdf-pessoa').value;
+
+    const prompt = `Você é um assistente financeiro. Analise este PDF de extrato bancário ou fatura de cartão e extraia TODAS as transações.
+
+Retorne SOMENTE um JSON válido, sem texto antes ou depois, no formato:
+[
+  {
+    "descricao": "nome do estabelecimento ou descrição",
+    "valor": 99.90,
+    "data": "2025-06-10",
+    "tipo": "despesa",
+    "categoria": "uma de: Alimentação, Moradia, Saúde, Educação, Transporte, Lazer, Vestuário, Assinaturas, Salário, Investimento, Outros"
+  }
+]
+
+Regras:
+- tipo deve ser "receita" para créditos/entradas, "despesa" para débitos/saídas
+- data no formato YYYY-MM-DD
+- valor sempre positivo
+- categoria deve corresponder à natureza do gasto
+- ignore totais, saldos, linhas de cabeçalho`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        messages:[{
+          role:'user',
+          content:[
+            { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
+            { type:'text', text:prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content?.find(c=>c.type==='text')?.text || '[]';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const txs   = JSON.parse(clean);
+
+    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    renderPreview();
+  } catch(e){
+    toast('Erro ao processar PDF: '+e.message, true);
+    console.error(e);
+  } finally {
+    document.getElementById('pdf-loading').style.display='none';
+  }
+}
+
+function renderPreview(){
+  const list = document.getElementById('preview-list');
+  list.innerHTML = previewData.map((t,i) => `
+    <div class="preview-row" id="prev-${i}">
+      <input type="checkbox" class="preview-chk" checked id="chk-${i}">
+      <input class="p-date" type="date" value="${t.data||''}" onchange="previewData[${i}].data=this.value">
+      <input class="p-desc" type="text" value="${t.descricao||''}" onchange="previewData[${i}].descricao=this.value" placeholder="Descrição">
+      <input class="p-val" type="number" value="${t.valor||0}" step="0.01" onchange="previewData[${i}].valor=parseFloat(this.value)">
+      <select class="p-cat" onchange="previewData[${i}].categoria=this.value">
+        ${CATEGORIAS.map(c=>`<option${c===t.categoria?' selected':''}>${c}</option>`).join('')}
+      </select>
+      <select style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px" onchange="previewData[${i}].tipo=this.value">
+        <option value="despesa"${t.tipo==='despesa'?' selected':''}>↓ Desp.</option>
+        <option value="receita"${t.tipo==='receita'?' selected':''}>↑ Rec.</option>
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('preview-count').textContent = `${previewData.length} transações encontradas`;
+  document.getElementById('pdf-preview').style.display='block';
+}
+
+async function savePreview(){
+  const selecionadas = previewData.filter((_,i)=>document.getElementById('chk-'+i)?.checked);
+  if(!selecionadas.length){ toast('Nenhuma transação selecionada',true); return; }
+
+  const batch=db.batch();
+  selecionadas.forEach(t=>{
+    const ref=db.collection('transacoes').doc();
+    batch.set(ref,{
+      descricao:t.descricao, valor:t.valor, data:t.data,
+      tipo:t.tipo, categoria:t.categoria, conta:t.conta,
+      pessoa:t.pessoa, criadoEm:new Date().toISOString()
+    });
   });
+  await batch.commit();
+  toast(`${selecionadas.length} transações salvas ✓`);
+  cancelPreview();
+  document.getElementById('pdf-file').value='';
+  showTab('transacoes', document.querySelectorAll('.nav-btn')[1]);
+}
+
+function cancelPreview(){
+  document.getElementById('pdf-preview').style.display='none';
+  previewData=[];
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(v){
+  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(v);
+}
+function fmtDate(d){
+  if(!d) return '—';
+  const [y,m,day]=d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('Erro ao ler arquivo'));
+    r.readAsDataURL(file);
+  });
+}
+function toast(msg,err=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.borderColor=err?'#F87171':'#34D399';
+  el.style.color=err?'#F87171':'#34D399';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+function showTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
 }
 </script>
 </body>
