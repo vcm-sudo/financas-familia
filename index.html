@@ -171,6 +171,7 @@ tbody td{padding:10px 0;font-size:14px;}
     <div class="hright">
       <img class="uavatar" id="uavatar" src="" alt="">
       <span class="uname" id="uname"></span>
+      <button class="btn-out" onclick="openModal('modal-settings')" title="Configurações">⚙️</button>
       <button class="btn-out" onclick="logout()">Sair</button>
     </div>
   </div>
@@ -178,7 +179,7 @@ tbody td{padding:10px 0;font-size:14px;}
   <nav class="nav">
     <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
     <button class="nav-btn" onclick="showTab('transacoes',this)">Transações</button>
-    <button class="nav-btn" onclick="showTab('pdf',this)">Importar PDF</button>
+    <button class="nav-btn" onclick="showTab('pdf',this)">Importar</button>
   </nav>
 
   <div class="content">
@@ -266,20 +267,24 @@ tbody td{padding:10px 0;font-size:14px;}
       </div>
     </div>
 
-    <!-- IMPORTAR PDF -->
+    <!-- IMPORTAR -->
     <div id="tab-pdf" class="tab">
       <div class="card" style="margin-bottom:18px;">
-        <div class="sec-title">Importar extrato ou fatura em PDF</div>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">O Claude lê o PDF automaticamente e extrai as transações. Você revisa e confirma antes de salvar.</p>
+        <div class="sec-title">Importar extrato ou fatura</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">
+          <strong>PDF</strong>: IA lê e extrai as transações (precisa configurar API key em ⚙️).<br>
+          <strong>OFX</strong>: Bradesco e a maioria dos bancos exportam neste formato.<br>
+          <strong>CSV</strong>: Nubank exporta extrato e fatura em CSV.
+        </p>
 
         <div class="pdf-drop" id="pdf-drop" onclick="document.getElementById('pdf-file').click()"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="handleDrop(event)">
           <div class="pdf-drop-icon">📄</div>
-          <div class="pdf-drop-txt">Clique ou arraste o PDF aqui</div>
-          <div class="pdf-drop-sub">Extrato Nubank, Bradesco, fatura de cartão…</div>
-          <input type="file" id="pdf-file" accept=".pdf" style="display:none" onchange="handlePDFFile(event)">
+          <div class="pdf-drop-txt">Clique ou arraste o arquivo aqui</div>
+          <div class="pdf-drop-sub">PDF · OFX · CSV</div>
+          <input type="file" id="pdf-file" accept=".pdf,.ofx,.csv,.txt" style="display:none" onchange="handleFile(event)">
         </div>
 
         <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -294,7 +299,7 @@ tbody td{padding:10px 0;font-size:14px;}
       </div>
 
       <div id="pdf-loading" style="display:none" class="card">
-        <div class="loading-msg"><span class="spinner"></span>Analisando PDF com IA…</div>
+        <div class="loading-msg"><span class="spinner"></span><span id="loading-text">Processando…</span></div>
       </div>
 
       <div id="pdf-preview" style="display:none" class="card">
@@ -359,6 +364,25 @@ tbody td{padding:10px 0;font-size:14px;}
   </div>
 </div>
 
+<!-- MODAL CONFIGURAÇÕES -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">⚙️ Configurações</span>
+      <button class="modal-close" onclick="closeModal('modal-settings')">×</button>
+    </div>
+    <div class="fg">
+      <label class="flbl">Anthropic API Key (para ler PDF)</label>
+      <input class="finp" id="api-key" type="password" placeholder="sk-ant-api03-...">
+      <div style="color:var(--muted);font-size:11px;margin-top:6px;line-height:1.5">
+        Salva só no seu navegador (localStorage), nunca vai para o servidor.<br>
+        Obter em: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com/settings/keys</a>
+      </div>
+    </div>
+    <button class="btn btn-green" style="width:100%;margin-top:6px" onclick="saveSettings()">Salvar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -403,6 +427,7 @@ auth.onAuthStateChanged(u => {
     document.getElementById('uavatar').src=u.photoURL||'';
     document.getElementById('hdr-sub').textContent='Vinicius & Esposa · '+new Date().getFullYear();
     initTxDate();
+    loadSettings();
     listenTx();
   } else {
     document.getElementById('login-screen').style.display='flex';
@@ -644,23 +669,52 @@ function selPessoa(btn,val){
   document.getElementById('tx-pessoa').value=val;
 }
 
-// ── PDF ───────────────────────────────────────────────────────────────────────
+// ── IMPORTAR (PDF / OFX / CSV) ────────────────────────────────────────────────
 let previewData = [];
 
 function handleDrop(e){
   e.preventDefault();
   document.getElementById('pdf-drop').classList.remove('drag');
   const file = e.dataTransfer.files[0];
-  if(file&&file.type==='application/pdf') processPDF(file);
-  else toast('Envie um arquivo PDF',true);
+  if(file) routeFile(file);
 }
 
-function handlePDFFile(e){
-  const file=e.target.files[0];
-  if(file) processPDF(file);
+function handleFile(e){
+  const file = e.target.files[0];
+  if(file) routeFile(file);
 }
 
+function routeFile(file){
+  const ext = file.name.toLowerCase().split('.').pop();
+  if(ext === 'pdf')  processPDF(file);
+  else if(ext === 'ofx') processOFX(file);
+  else if(ext === 'csv' || ext === 'txt') processCSV(file);
+  else toast('Formato não suportado. Use PDF, OFX ou CSV.', true);
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function saveSettings(){
+  const key = document.getElementById('api-key').value.trim();
+  if(key) localStorage.setItem('anthropic_api_key', key);
+  closeModal('modal-settings');
+  toast('Configurações salvas ✓');
+}
+
+function loadSettings(){
+  const key = localStorage.getItem('anthropic_api_key') || '';
+  document.getElementById('api-key').value = key;
+}
+
+// ── PDF via Anthropic API ─────────────────────────────────────────────────────
 async function processPDF(file){
+  const apiKey = localStorage.getItem('anthropic_api_key');
+  if(!apiKey){
+    toast('Configure sua API key em ⚙️ primeiro', true);
+    openModal('modal-settings');
+    return;
+  }
+
+  document.getElementById('loading-text').textContent = 'Analisando PDF com IA…';
   document.getElementById('pdf-loading').style.display='block';
   document.getElementById('pdf-preview').style.display='none';
 
@@ -691,10 +745,15 @@ Regras:
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4000,
+        model:'claude-sonnet-4-5-20250929',
+        max_tokens:8000,
         messages:[{
           role:'user',
           content:[
@@ -705,6 +764,11 @@ Regras:
       })
     });
 
+    if(!resp.ok){
+      const err = await resp.text();
+      throw new Error(`API ${resp.status}: ${err.slice(0,200)}`);
+    }
+
     const data = await resp.json();
     const text = data.content?.find(c=>c.type==='text')?.text || '[]';
     const clean = text.replace(/```json|```/g,'').trim();
@@ -713,11 +777,164 @@ Regras:
     previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
     renderPreview();
   } catch(e){
-    toast('Erro ao processar PDF: '+e.message, true);
+    toast('Erro: '+e.message, true);
     console.error(e);
   } finally {
     document.getElementById('pdf-loading').style.display='none';
+    document.getElementById('pdf-file').value='';
   }
+}
+
+// ── OFX parser ────────────────────────────────────────────────────────────────
+async function processOFX(file){
+  document.getElementById('loading-text').textContent = 'Lendo arquivo OFX…';
+  document.getElementById('pdf-loading').style.display='block';
+  document.getElementById('pdf-preview').style.display='none';
+
+  try {
+    const text = await file.text();
+    const conta  = document.getElementById('pdf-conta').value;
+    const pessoa = document.getElementById('pdf-pessoa').value;
+
+    // OFX vem em SGML/XML. Extraímos blocos <STMTTRN>
+    const stmts = text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi) || [];
+    if(!stmts.length) throw new Error('Nenhuma transação encontrada no arquivo OFX');
+
+    const txs = stmts.map(stmt => {
+      const get = tag => {
+        const re = new RegExp(`<${tag}>([^<\\r\\n]+)`, 'i');
+        const m = stmt.match(re);
+        return m ? m[1].trim() : '';
+      };
+      const trnType = get('TRNTYPE').toUpperCase();
+      const dt = get('DTPOSTED').slice(0,8); // YYYYMMDD
+      const data = `${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}`;
+      const amt = parseFloat(get('TRNAMT')) || 0;
+      const memo = get('MEMO') || get('NAME') || 'Sem descrição';
+      const tipo = (amt > 0 || trnType === 'CREDIT') ? 'receita' : 'despesa';
+      return {
+        descricao: memo,
+        valor: Math.abs(amt),
+        data,
+        tipo,
+        categoria: guessCategory(memo, tipo)
+      };
+    });
+
+    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    renderPreview();
+  } catch(e){
+    toast('Erro: '+e.message, true);
+    console.error(e);
+  } finally {
+    document.getElementById('pdf-loading').style.display='none';
+    document.getElementById('pdf-file').value='';
+  }
+}
+
+// ── CSV parser ────────────────────────────────────────────────────────────────
+async function processCSV(file){
+  document.getElementById('loading-text').textContent = 'Lendo CSV…';
+  document.getElementById('pdf-loading').style.display='block';
+  document.getElementById('pdf-preview').style.display='none';
+
+  try {
+    const text = await file.text();
+    const conta  = document.getElementById('pdf-conta').value;
+    const pessoa = document.getElementById('pdf-pessoa').value;
+
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if(lines.length < 2) throw new Error('CSV vazio');
+
+    // Detecta separador
+    const firstLine = lines[0];
+    const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+
+    const header = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/^["']|["']$/g,''));
+
+    // Identifica colunas (Nubank, Bradesco, genérico)
+    const idx = {
+      data: header.findIndex(h => /^data$|^date$/.test(h) || h.includes('data')),
+      valor: header.findIndex(h => /^valor$|^value$|^amount$/.test(h) || h.includes('valor')),
+      desc: header.findIndex(h => /^descri/.test(h) || h.includes('hist') || h.includes('memo') || h.includes('description') || h.includes('identificador')),
+      categoria: header.findIndex(h => /^categoria$|^category$/.test(h))
+    };
+
+    if(idx.data === -1 || idx.valor === -1){
+      throw new Error('CSV sem colunas Data e Valor reconhecíveis. Cabeçalho: ' + header.join(', '));
+    }
+
+    // Garante coluna de descrição (se não tiver, usa próxima coluna disponível)
+    if(idx.desc === -1) idx.desc = header.findIndex((_,i) => i !== idx.data && i !== idx.valor);
+
+    const txs = lines.slice(1).map(line => {
+      const cols = parseCSVLine(line, sep);
+      const dataRaw = cols[idx.data] || '';
+      const valRaw  = (cols[idx.valor] || '0').replace(/["']/g,'').replace(/\./g,'').replace(',','.');
+      const valor   = parseFloat(valRaw) || 0;
+      const desc    = (cols[idx.desc] || 'Sem descrição').replace(/^["']|["']$/g,'');
+
+      let data = dataRaw.trim();
+      // Converte DD/MM/YYYY → YYYY-MM-DD
+      if(/^\d{2}\/\d{2}\/\d{4}$/.test(data)){
+        const [d,m,y] = data.split('/');
+        data = `${y}-${m}-${d}`;
+      } else if(/^\d{2}-\d{2}-\d{4}$/.test(data)){
+        const [d,m,y] = data.split('-');
+        data = `${y}-${m}-${d}`;
+      }
+
+      const tipo = valor >= 0 ? 'receita' : 'despesa';
+      return {
+        descricao: desc,
+        valor: Math.abs(valor),
+        data,
+        tipo,
+        categoria: idx.categoria !== -1 && cols[idx.categoria] ? cols[idx.categoria] : guessCategory(desc, tipo)
+      };
+    }).filter(t => t.valor > 0 && t.data);
+
+    if(!txs.length) throw new Error('Nenhuma transação válida no CSV');
+
+    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    renderPreview();
+  } catch(e){
+    toast('Erro: '+e.message, true);
+    console.error(e);
+  } finally {
+    document.getElementById('pdf-loading').style.display='none';
+    document.getElementById('pdf-file').value='';
+  }
+}
+
+// Parser CSV simples que respeita aspas
+function parseCSVLine(line, sep){
+  const out = [];
+  let cur = '', inQuote = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){ inQuote = !inQuote; }
+    else if(ch === sep && !inQuote){ out.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  out.push(cur);
+  return out;
+}
+
+// Heurística de categoria a partir da descrição
+function guessCategory(desc, tipo){
+  if(tipo === 'receita') return /salario|salário|pagamento|provento/i.test(desc) ? 'Salário' : 'Outros';
+  const d = desc.toLowerCase();
+  if(/super|mercado|pao|açougue|padaria|hortifruti|ifood|rappi|restaur|lanche|food|burger|pizza|cafe|café/i.test(d)) return 'Alimentação';
+  if(/aluguel|condomin|luz|agua|água|gas|gás|enel|sabesp|comgas|cemig|copel/i.test(d)) return 'Moradia';
+  if(/farma|drogaria|hospital|clínica|clinica|médico|medico|dentista|exame|laboratório|laboratorio/i.test(d)) return 'Saúde';
+  if(/escola|colégio|colegio|universidade|curso|livro|udemy|coursera/i.test(d)) return 'Educação';
+  if(/uber|99|taxi|combustivel|combustível|posto|gasolina|estacionamento|onibus|ônibus|metrô|metro/i.test(d)) return 'Transporte';
+  if(/cinema|netflix|spotify|prime|disney|hbo|show|teatro|bar|cerveja|viagem/i.test(d)) return 'Lazer';
+  if(/roupa|sapato|tênis|tenis|zara|renner|c&a|riachuelo|nike|adidas/i.test(d)) return 'Vestuário';
+  if(/netflix|spotify|amazon prime|disney|apple|google|youtube|icloud|microsoft/i.test(d)) return 'Assinaturas';
+  if(/aplicação|aplicacao|investimento|cdb|tesouro|fundo|ações|acoes/i.test(d)) return 'Investimento';
+  return 'Outros';
 }
 
 function renderPreview(){
@@ -758,7 +975,6 @@ async function savePreview(){
   await batch.commit();
   toast(`${selecionadas.length} transações salvas ✓`);
   cancelPreview();
-  document.getElementById('pdf-file').value='';
   showTab('transacoes', document.querySelectorAll('.nav-btn')[1]);
 }
 
