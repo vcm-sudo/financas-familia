@@ -245,7 +245,7 @@ tbody td{padding:10px 0;font-size:14px;}
             <option value="esposa">Esposa</option>
           </select>
         </div>
-        <button class="btn btn-green" onclick="openModal('modal-tx')">+ Nova transação</button>
+        <button class="btn btn-green" onclick="resetTxModal();openModal('modal-tx')">+ Nova transação</button>
       </div>
 
       <!-- Agrupado por categoria -->
@@ -403,6 +403,7 @@ const db   = firebase.firestore();
 let ALL_TX = [];
 let charts = {};
 let filtros = { vini: true, esposa: true };
+let editingId = null;
 
 const MESES_NOME = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const CATEGORIAS = ["Alimentação","Moradia","Saúde","Educação","Transporte","Lazer","Vestuário","Assinaturas","Salário","Investimento","Outros"];
@@ -623,7 +624,7 @@ function rowHTML(t, showDel){
     ? `<span class="dot-vini"></span>Vinicius`
     : `<span class="dot-esp"></span>Esposa`;
   const contaCor = CONTA_CORES[t.conta]||'#8A94A6';
-  const delBtn = showDel ? `<button class="btn-del" onclick="delTx('${t.id}')">×</button>` : '';
+  const delBtn = showDel ? `<button class="btn-del" onclick="editTx('${t.id}')" title="Editar" style="color:var(--accent);margin-right:2px">✎</button><button class="btn-del" onclick="delTx('${t.id}')" title="Remover">×</button>` : '';
   return `<tr>
     <td style="color:var(--muted)">${fmtDate(t.data)}</td>
     <td>${t.descricao||'—'}</td>
@@ -641,7 +642,39 @@ async function delTx(id){
   toast('Removida ✓');
 }
 
-// ── NOVA TRANSAÇÃO ────────────────────────────────────────────────────────────
+// ── EDITAR TRANSAÇÃO ──────────────────────────────────────────────────────────
+function editTx(id){
+  const t = ALL_TX.find(x => x.id === id);
+  if(!t) return;
+  editingId = id;
+
+  // Preenche os campos
+  document.getElementById('tx-desc').value  = t.descricao || '';
+  document.getElementById('tx-val').value   = t.valor || '';
+  document.getElementById('tx-data').value  = t.data || '';
+  document.getElementById('tx-cat').value   = t.categoria || 'Outros';
+  document.getElementById('tx-conta').value = t.conta || 'Nubank';
+  document.getElementById('tx-tipo').value  = t.tipo || 'despesa';
+  document.getElementById('tx-pessoa').value= t.pessoa || 'vini';
+
+  // Atualiza estado visual dos botões
+  document.querySelectorAll('#modal-tx .type-btns').forEach(group => {
+    group.querySelectorAll('.type-btn').forEach(b => b.className = 'type-btn');
+  });
+  // Tipo
+  const tipoBtn = document.querySelector(`#modal-tx [data-val="${t.tipo}"]`);
+  if(tipoBtn) tipoBtn.className = 'type-btn ' + (t.tipo==='receita'?'sel-rec':'sel-desp');
+  // Pessoa
+  const pessoaBtn = document.querySelector(`#modal-tx [data-val="${t.pessoa}"]`);
+  if(pessoaBtn) pessoaBtn.className = 'type-btn ' + (t.pessoa==='vini'?'sel-acc':'sel-esp');
+
+  // Muda título e botão
+  document.querySelector('#modal-tx .modal-title').textContent = 'Editar transação';
+  document.querySelector('#modal-tx button.btn-green').textContent = 'Salvar alterações';
+  openModal('modal-tx');
+}
+
+// ── NOVA / EDITAR TRANSAÇÃO ───────────────────────────────────────────────────
 async function addTransacao(){
   const desc  = document.getElementById('tx-desc').value.trim();
   const val   = parseFloat(document.getElementById('tx-val').value);
@@ -651,11 +684,36 @@ async function addTransacao(){
   const conta = document.getElementById('tx-conta').value;
   const pessoa= document.getElementById('tx-pessoa').value;
   if(!desc||!val||!data){ toast('Preencha todos os campos',true); return; }
-  await db.collection('transacoes').add({ descricao:desc, valor:val, data, tipo, categoria:cat, conta, pessoa, criadoEm:new Date().toISOString() });
+
+  const payload = { descricao:desc, valor:val, data, tipo, categoria:cat, conta, pessoa };
+
+  if(editingId){
+    await db.collection('transacoes').doc(editingId).update(payload);
+    toast('Transação atualizada ✓');
+  } else {
+    await db.collection('transacoes').add({ ...payload, criadoEm:new Date().toISOString() });
+    toast('Transação salva ✓');
+  }
+
   closeModal('modal-tx');
+  resetTxModal();
+}
+
+function resetTxModal(){
+  editingId = null;
   document.getElementById('tx-desc').value='';
   document.getElementById('tx-val').value='';
-  toast('Transação salva ✓');
+  initTxDate();
+  document.getElementById('tx-tipo').value='receita';
+  document.getElementById('tx-pessoa').value='vini';
+  document.querySelector('#modal-tx .modal-title').textContent = 'Nova transação';
+  document.querySelector('#modal-tx button.btn-green').textContent = 'Salvar transação';
+  // Reseta visual dos botões para o padrão
+  document.querySelectorAll('#modal-tx .type-btn').forEach(b => b.className = 'type-btn');
+  const recBtn = document.querySelector('#modal-tx [data-val="receita"]');
+  if(recBtn) recBtn.className = 'type-btn sel-rec';
+  const viniBtn = document.querySelector('#modal-tx [data-val="vini"]');
+  if(viniBtn) viniBtn.className = 'type-btn sel-acc';
 }
 
 function selTipo(btn, val){
@@ -723,12 +781,17 @@ async function processPDF(file){
     const conta  = document.getElementById('pdf-conta').value;
     const pessoa = document.getElementById('pdf-pessoa').value;
 
-    const prompt = `Você é um assistente financeiro. Analise este PDF de extrato bancário ou fatura de cartão e extraia TODAS as transações.
+    const prompt = `Você é um assistente financeiro especializado em ler extratos bancários e faturas de cartão de crédito brasileiros.
 
-Retorne SOMENTE um JSON válido, sem texto antes ou depois, no formato:
+Este PDF pode ser:
+- **Extrato bancário** (conta corrente): tem entradas (créditos) e saídas (débitos)
+- **Fatura de cartão de crédito**: TODAS as compras são despesas (saídas), mesmo que apareçam como valores positivos. Estornos/créditos viram receitas.
+
+Extraia TODAS as transações que encontrar. Retorne SOMENTE um JSON válido, sem texto antes ou depois:
+
 [
   {
-    "descricao": "nome do estabelecimento ou descrição",
+    "descricao": "estabelecimento ou descrição completa",
     "valor": 99.90,
     "data": "2025-06-10",
     "tipo": "despesa",
@@ -736,12 +799,18 @@ Retorne SOMENTE um JSON válido, sem texto antes ou depois, no formato:
   }
 ]
 
-Regras:
-- tipo deve ser "receita" para créditos/entradas, "despesa" para débitos/saídas
-- data no formato YYYY-MM-DD
-- valor sempre positivo
-- categoria deve corresponder à natureza do gasto
-- ignore totais, saldos, linhas de cabeçalho`;
+REGRAS CRÍTICAS:
+1. Em FATURAS DE CARTÃO: tipo = "despesa" para todas as compras (mesmo as positivas). Só use "receita" para estornos, pagamentos da fatura, ou créditos explícitos.
+2. Em EXTRATOS BANCÁRIOS: "receita" para entradas/créditos, "despesa" para saídas/débitos.
+3. Datas no formato YYYY-MM-DD. Se a fatura tiver só DD/MM, use o ano da fatura (procure no cabeçalho).
+4. Valor sempre POSITIVO (sem sinal de menos).
+5. Para parcelamentos (ex: "3/12"), inclua a parcela na descrição.
+6. Para compras em moeda estrangeira, converta para o valor em reais que aparece.
+7. IGNORE: totais, subtotais, saldos, IOF, taxas de conversão isoladas (já estão embutidas), juros, encargos.
+8. Categorias mais comuns para faturas: Alimentação (mercados, restaurantes, ifood), Transporte (uber, postos, estacionamento), Lazer (cinema, bar, viagem), Saúde (farmácia, médico), Assinaturas (Netflix, Spotify), Vestuário (lojas de roupa).
+9. Use a descrição mais completa que aparecer (ex: "PADARIA SAO JOAO" e não só "PADARIA").
+
+Seja EXAUSTIVO — extraia toda transação, mesmo as pequenas (R$ 2,00, R$ 5,00).`;
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
