@@ -248,8 +248,8 @@ tbody td{padding:10px 0;font-size:14px;}
             <option value="">Todas as categorias</option>
             <option>Alimentação</option><option>Moradia</option><option>Saúde</option>
             <option>Educação</option><option>Transporte</option><option>Lazer</option>
-            <option>Vestuário</option><option>Assinaturas</option><option>Salário</option>
-            <option>Investimento</option><option>Outros</option>
+            <option>Vestuário</option><option>Assinaturas</option><option>Comércio Eletrônico</option>
+            <option>Salário</option><option>Investimento</option><option>Outros</option>
           </select>
         </div>
         <button class="btn btn-green" onclick="resetTxModal();openModal('modal-tx')">+ Nova transação</button>
@@ -349,8 +349,8 @@ tbody td{padding:10px 0;font-size:14px;}
       <select class="finp" id="tx-cat">
         <option>Alimentação</option><option>Moradia</option><option>Saúde</option>
         <option>Educação</option><option>Transporte</option><option>Lazer</option>
-        <option>Vestuário</option><option>Assinaturas</option><option>Salário</option>
-        <option>Investimento</option><option>Outros</option>
+        <option>Vestuário</option><option>Assinaturas</option><option>Comércio Eletrônico</option>
+        <option>Salário</option><option>Investimento</option><option>Outros</option>
       </select>
     </div>
     <div class="fg">
@@ -413,11 +413,11 @@ let filtros = { vini: true, esposa: true };
 let editingId = null;
 
 const MESES_NOME = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-const CATEGORIAS = ["Alimentação","Moradia","Saúde","Educação","Transporte","Lazer","Vestuário","Assinaturas","Salário","Investimento","Outros"];
+const CATEGORIAS = ["Alimentação","Moradia","Saúde","Educação","Transporte","Lazer","Vestuário","Assinaturas","Comércio Eletrônico","Salário","Investimento","Outros"];
 const CAT_CORES  = {
   "Alimentação":"#F87171","Moradia":"#4F8EF7","Saúde":"#34D399","Educação":"#A78BFA",
   "Transporte":"#FBBF24","Lazer":"#60A5FA","Vestuário":"#F472B6","Assinaturas":"#818CF8",
-  "Salário":"#6EE7B7","Investimento":"#FCD34D","Outros":"#8A94A6"
+  "Comércio Eletrônico":"#FB923C","Salário":"#6EE7B7","Investimento":"#FCD34D","Outros":"#8A94A6"
 };
 const CONTA_CORES = { "Nubank":"#820AD1","Bradesco":"#CC0000","Outros":"#8A94A6" };
 
@@ -1072,6 +1072,7 @@ function guessCategory(desc, tipo){
   if(/cinema|netflix|spotify|prime|disney|hbo|show|teatro|bar|cerveja|viagem/i.test(d)) return 'Lazer';
   if(/roupa|sapato|tênis|tenis|zara|renner|c&a|riachuelo|nike|adidas/i.test(d)) return 'Vestuário';
   if(/netflix|spotify|amazon prime|disney|apple|google|youtube|icloud|microsoft/i.test(d)) return 'Assinaturas';
+  if(/amazon|mercado.?livre|mercadolivre|shopee|magalu|magazine.?luiza|americanas|submarino|aliexpress|shein|wish/i.test(d)) return 'Comércio Eletrônico';
   if(/aplicação|aplicacao|investimento|cdb|tesouro|fundo|ações|acoes/i.test(d)) return 'Investimento';
   return 'Outros';
 }
