@@ -237,12 +237,19 @@ tbody td{padding:10px 0;font-size:14px;}
           </select>
           <select class="filter-select" id="fil-conta" onchange="renderTransacoes()">
             <option value="">Todas as contas</option>
-            <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+            <option>Nubank</option><option>Bradesco</option>
+            <option>Mastercard</option><option>Visa</option><option>Outros</option>
           </select>
           <select class="filter-select" id="fil-pessoa" onchange="renderTransacoes()">
             <option value="">Todos</option>
             <option value="vini">Vinicius</option>
             <option value="esposa">Esposa</option>
+          </select>
+          <select class="filter-select" id="fil-ordem" onchange="renderTransacoes()">
+            <option value="data-desc">Data ↓ (mais recente)</option>
+            <option value="data-asc">Data ↑ (mais antigo)</option>
+            <option value="valor-desc">Valor ↓ (maior primeiro)</option>
+            <option value="valor-asc">Valor ↑ (menor primeiro)</option>
           </select>
           <select class="filter-select" id="fil-cat" onchange="renderTransacoes()">
             <option value="">Todas as categorias</option>
@@ -296,7 +303,8 @@ tbody td{padding:10px 0;font-size:14px;}
 
         <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <select class="filter-select" id="pdf-conta">
-            <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+            <option>Nubank</option><option>Bradesco</option>
+            <option>Mastercard</option><option>Visa</option><option>Outros</option>
           </select>
           <select class="filter-select" id="pdf-pessoa">
             <option value="vini">Vinicius</option>
@@ -356,7 +364,8 @@ tbody td{padding:10px 0;font-size:14px;}
     <div class="fg">
       <label class="flbl">Conta</label>
       <select class="finp" id="tx-conta">
-        <option>Nubank</option><option>Bradesco</option><option>Outros</option>
+        <option>Nubank</option><option>Bradesco</option>
+        <option>Mastercard</option><option>Visa</option><option>Outros</option>
       </select>
     </div>
     <div class="fg">
@@ -425,7 +434,7 @@ const CAT_CORES  = {
   "Transporte":"#FBBF24","Lazer":"#60A5FA","Vestuário":"#F472B6","Assinaturas":"#818CF8",
   "Comércio Eletrônico":"#FB923C","Salário":"#6EE7B7","Investimento":"#FCD34D","Outros":"#8A94A6"
 };
-const CONTA_CORES = { "Nubank":"#820AD1","Bradesco":"#CC0000","Outros":"#8A94A6" };
+const CONTA_CORES = { "Nubank":"#820AD1","Bradesco":"#CC0000","Mastercard":"#EB001B","Visa":"#1A1F71","Outros":"#8A94A6" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function loginGoogle(){
@@ -600,7 +609,13 @@ function renderTransacoes(){
   const conta  = document.getElementById('fil-conta').value;
   const pessoa = document.getElementById('fil-pessoa').value;
   const cat    = document.getElementById('fil-cat').value;
-  const tx = txFiltradas(mes,tipo,conta,pessoa,false,cat);
+  const ordem  = document.getElementById('fil-ordem').value;
+  let tx = txFiltradas(mes,tipo,conta,pessoa,false,cat);
+
+  if(ordem === 'data-asc')   tx = [...tx].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  else if(ordem === 'valor-desc') tx = [...tx].sort((a,b) => (b.valor||0) - (a.valor||0));
+  else if(ordem === 'valor-asc')  tx = [...tx].sort((a,b) => (a.valor||0) - (b.valor||0));
+  // data-desc é o padrão (já vem do Firestore ordenado por data desc)
 
   // Agrupado por categoria
   const catDiv = document.getElementById('cat-group');
