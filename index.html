@@ -612,10 +612,10 @@ function renderTransacoes(){
     catDiv.innerHTML = sorted.map(([cat,val])=>{
       const cor=CAT_CORES[cat]||'#8A94A6';
       const ativa = catAtiva === cat;
-      return `<div onclick="filtrarCategoria('${cat}')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;padding-left:6px;padding-right:6px;${ativa?`background:${cor}18;`:''}" title="Filtrar por ${cat}">
+      return `<div data-cat="${escHtml(cat)}" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;padding-left:6px;padding-right:6px;${ativa?`background:${cor}18;`:''}" title="Filtrar por ${escHtml(cat)}">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="width:10px;height:10px;border-radius:50%;background:${cor};display:inline-block"></span>
-          <span style="font-size:14px${ativa?`;color:${cor};font-weight:600`:''}">${cat}</span>
+          <span style="font-size:14px${ativa?`;color:${cor};font-weight:600`:''}">${escHtml(cat)}</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-weight:600;color:var(--red)">${fmt(val)}</span>
@@ -623,6 +623,7 @@ function renderTransacoes(){
         </div>
       </div>`;
     }).join('');
+    catDiv.onclick = e => { const d = e.target.closest('[data-cat]'); if(d) filtrarCategoria(d.dataset.cat); };
   } else {
     catDiv.innerHTML='<div style="color:var(--muted);font-size:14px;padding:16px 0">Nenhuma despesa no período.</div>';
   }
@@ -806,10 +807,10 @@ async function migrateCategorias(){
 
   try {
     const snap = await db.collection('transacoes').get();
-    const toUpdate = snap.docs.filter(doc => {
-      const { descricao = '', categoria } = doc.data();
-      const novacat = guessCategory(descricao, 'despesa');
-      return novacat !== 'Outros' && novacat !== categoria;
+    const toUpdate = snap.docs.flatMap(doc => {
+      const { descricao = '', tipo = 'despesa', categoria } = doc.data();
+      const novacat = guessCategory(descricao, tipo);
+      return novacat !== 'Outros' && novacat !== categoria ? [{ doc, novacat }] : [];
     });
 
     if(!toUpdate.length){
@@ -820,9 +821,8 @@ async function migrateCategorias(){
     const BATCH_SIZE = 400;
     for(let i = 0; i < toUpdate.length; i += BATCH_SIZE){
       const batch = db.batch();
-      toUpdate.slice(i, i + BATCH_SIZE).forEach(doc => {
-        const { descricao = '' } = doc.data();
-        batch.update(doc.ref, { categoria: guessCategory(descricao, 'despesa') });
+      toUpdate.slice(i, i + BATCH_SIZE).forEach(({ doc, novacat }) => {
+        batch.update(doc.ref, { categoria: novacat });
       });
       await batch.commit();
     }
@@ -1034,12 +1034,14 @@ async function processCSV(file){
       }
 
       const tipo = valor >= 0 ? 'receita' : 'despesa';
+      const _faturaCartao = isCreditCardPayment(desc);
       return {
         descricao: desc,
         valor: Math.abs(valor),
         data,
         tipo,
-        categoria: idx.categoria !== -1 && cols[idx.categoria] ? cols[idx.categoria] : guessCategory(desc, tipo)
+        categoria: idx.categoria !== -1 && cols[idx.categoria] ? cols[idx.categoria] : guessCategory(desc, tipo),
+        _faturaCartao
       };
     }).filter(t => t.valor > 0 && t.data);
 
@@ -1071,24 +1073,29 @@ function parseCSVLine(line, sep){
 }
 
 // ── Memória de categorias ─────────────────────────────────────────────────────
+// Fix #6: cache em memória para evitar JSON.parse a cada transação importada
+let _catMemoryCache = null;
 function memoryCatKey(desc){
   return desc.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim().slice(0,20);
 }
 function loadCatMemory(){
-  try { return JSON.parse(localStorage.getItem('cat_memory_v1') || '{}'); } catch(e){ return {}; }
+  if(_catMemoryCache) return _catMemoryCache;
+  try { _catMemoryCache = JSON.parse(localStorage.getItem('cat_memory_v1') || '{}'); }
+  catch(e){ _catMemoryCache = {}; }
+  return _catMemoryCache;
 }
 function saveCatMemory(desc, cat){
   const mem = loadCatMemory();
   const key = memoryCatKey(desc);
   if(key.length < 3) return;
   mem[key] = cat;
+  _catMemoryCache = mem;
   localStorage.setItem('cat_memory_v1', JSON.stringify(mem));
 }
 function lookupCatMemory(desc){
   const mem = loadCatMemory();
-  const norm = desc.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
-  const key  = norm.slice(0,20);
-  if(mem[key]) return mem[key];
+  const norm = memoryCatKey(desc);
+  if(mem[norm]) return mem[norm];
   // Procura qualquer chave salva (≥8 chars) contida na descrição atual
   for(const [k, v] of Object.entries(mem)){
     if(k.length >= 8 && norm.includes(k)) return v;
@@ -1098,6 +1105,11 @@ function lookupCatMemory(desc){
 function applyMemory(t){
   const cat = lookupCatMemory(t.descricao);
   return cat ? { ...t, categoria: cat } : t;
+}
+
+// Fix #2: escapa caracteres HTML para uso seguro em atributos e conteúdo
+function escHtml(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // Detecta pagamentos de fatura de cartão no extrato bancário
@@ -1116,29 +1128,28 @@ function guessCategory(desc, tipo){
   if(/farma|drogaria|hospital|clínica|clinica|médico|medico|dentista|exame|laboratório|laboratorio/i.test(d)) return 'Saúde';
   if(/escola|colégio|colegio|universidade|curso|livro|udemy|coursera/i.test(d)) return 'Educação';
   if(/uber|99|taxi|combustivel|combustível|posto|gasolina|estacionamento|onibus|ônibus|metrô|metro/i.test(d)) return 'Transporte';
-  if(/cinema|netflix|spotify|prime|disney|hbo|show|teatro|bar|cerveja|viagem/i.test(d)) return 'Lazer';
+  if(/cinema|show|teatro|bar|cerveja|viagem/i.test(d)) return 'Lazer';
   if(/roupa|sapato|tênis|tenis|zara|renner|c&a|riachuelo|nike|adidas/i.test(d)) return 'Vestuário';
-  if(/netflix|spotify|amazon prime|disney|apple|google|youtube|icloud|microsoft/i.test(d)) return 'Assinaturas';
+  if(/netflix|spotify|prime|disney|hbo|apple|google|youtube|icloud|microsoft/i.test(d)) return 'Assinaturas';
   if(/aplicação|aplicacao|investimento|cdb|tesouro|fundo|ações|acoes/i.test(d)) return 'Investimento';
   return 'Outros';
 }
 
 function renderPreview(){
   const list = document.getElementById('preview-list');
-  const totalMarcadas = previewData.filter(t => !t._faturaCartao).length;
 
   list.innerHTML = previewData.map((t,i) => {
     const isFatura = !!t._faturaCartao;
-    const rowStyle = isFatura ? 'opacity:0.5;background:#F8717108;border-color:#F8717133;' : '';
+    const rowStyle = isFatura ? 'opacity:0.5;background:var(--red-faint,#F8717108);border-color:#F8717133;' : '';
     const aviso = isFatura ? `<span title="Provável pagamento de fatura — já contabilizado via PDF do cartão" style="font-size:11px;color:var(--red);white-space:nowrap">⚠️ fatura</span>` : '';
     return `
     <div class="preview-row" id="prev-${i}" style="${rowStyle}">
-      <input type="checkbox" class="preview-chk" ${isFatura ? '' : 'checked'} id="chk-${i}">
-      <input class="p-date" type="date" value="${t.data||''}" onchange="previewData[${i}].data=this.value">
-      <input class="p-desc" type="text" value="${t.descricao||''}" onchange="previewData[${i}].descricao=this.value" placeholder="Descrição">
+      <input type="checkbox" class="preview-chk" ${isFatura ? '' : 'checked'} id="chk-${i}" onchange="updatePreviewCount()">
+      <input class="p-date" type="date" value="${escHtml(t.data||'')}" onchange="previewData[${i}].data=this.value">
+      <input class="p-desc" type="text" value="${escHtml(t.descricao||'')}" onchange="previewData[${i}].descricao=this.value" placeholder="Descrição">
       <input class="p-val" type="number" value="${t.valor||0}" step="0.01" onchange="previewData[${i}].valor=parseFloat(this.value)">
       <select class="p-cat" onchange="previewData[${i}].categoria=this.value;saveCatMemory(previewData[${i}].descricao,this.value)">
-        ${CATEGORIAS.map(c=>`<option${c===t.categoria?' selected':''}>${c}</option>`).join('')}
+        ${CATEGORIAS.map(c=>`<option${c===t.categoria?' selected':''}>${escHtml(c)}</option>`).join('')}
       </select>
       <select style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px" onchange="previewData[${i}].tipo=this.value">
         <option value="despesa"${t.tipo==='despesa'?' selected':''}>↓ Desp.</option>
@@ -1148,10 +1159,16 @@ function renderPreview(){
     </div>`;
   }).join('');
 
+  updatePreviewCount();
+  document.getElementById('pdf-preview').style.display='block';
+}
+
+function updatePreviewCount(){
+  const total = previewData.length;
+  const selecionadas = previewData.filter((_,i) => document.getElementById('chk-'+i)?.checked).length;
   const faturas = previewData.filter(t => t._faturaCartao).length;
   const info = faturas > 0 ? ` (${faturas} pag. fatura desmarcado${faturas>1?'s':''})` : '';
-  document.getElementById('preview-count').textContent = `${previewData.length} transações encontradas — ${totalMarcadas} selecionadas${info}`;
-  document.getElementById('pdf-preview').style.display='block';
+  document.getElementById('preview-count').textContent = `${total} transações encontradas — ${selecionadas} selecionadas${info}`;
 }
 
 async function savePreview(){
