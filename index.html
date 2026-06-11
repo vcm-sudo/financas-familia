@@ -244,6 +244,13 @@ tbody td{padding:10px 0;font-size:14px;}
             <option value="vini">Vinicius</option>
             <option value="esposa">Esposa</option>
           </select>
+          <select class="filter-select" id="fil-cat" onchange="renderTransacoes()">
+            <option value="">Todas as categorias</option>
+            <option>Alimentação</option><option>Moradia</option><option>Saúde</option>
+            <option>Educação</option><option>Transporte</option><option>Lazer</option>
+            <option>Vestuário</option><option>Assinaturas</option><option>Salário</option>
+            <option>Investimento</option><option>Outros</option>
+          </select>
         </div>
         <button class="btn btn-green" onclick="resetTxModal();openModal('modal-tx')">+ Nova transação</button>
       </div>
@@ -469,12 +476,13 @@ function populateMesFilter(){
   });
 }
 
-function txFiltradas(mesSel='', tipoSel='', contaSel='', pessoaSel='', useFiltroToggle=false){
+function txFiltradas(mesSel='', tipoSel='', contaSel='', pessoaSel='', useFiltroToggle=false, catSel=''){
   return ALL_TX.filter(t => {
     if(mesSel && !t.data?.startsWith(mesSel)) return false;
     if(tipoSel && t.tipo !== tipoSel) return false;
     if(contaSel && t.conta !== contaSel) return false;
     if(pessoaSel && t.pessoa !== pessoaSel) return false;
+    if(catSel && t.categoria !== catSel) return false;
     if(useFiltroToggle){
       if(t.pessoa==='vini' && !filtros.vini) return false;
       if(t.pessoa==='esposa' && !filtros.esposa) return false;
@@ -539,8 +547,11 @@ function renderCatChart(tx){
     type:'doughnut',
     data:{ labels, datasets:[{ data:values, backgroundColor:cores, borderWidth:2, borderColor:'#1E2535' }] },
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ color:'#8A94A6', font:{size:11}, boxWidth:12 } },
-        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)}` } } } }
+      onClick:(evt,elements)=>{ if(elements.length>0) navigateToCat(charts.cat.data.labels[elements[0].index]); },
+      onHover:(evt)=>{ evt.native.target.style.cursor='pointer'; },
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#8A94A6', font:{size:11}, boxWidth:12 },
+        onClick:(evt,item)=>{ navigateToCat(item.text); } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} — clique para ver` } } } }
   });
 }
 
@@ -582,7 +593,8 @@ function renderTransacoes(){
   const tipo   = document.getElementById('fil-tipo').value;
   const conta  = document.getElementById('fil-conta').value;
   const pessoa = document.getElementById('fil-pessoa').value;
-  const tx = txFiltradas(mes,tipo,conta,pessoa,false);
+  const cat    = document.getElementById('fil-cat').value;
+  const tx = txFiltradas(mes,tipo,conta,pessoa,false,cat);
 
   // Agrupado por categoria
   const catDiv = document.getElementById('cat-group');
@@ -590,14 +602,19 @@ function renderTransacoes(){
   tx.filter(t=>t.tipo==='despesa').forEach(t=>{ map[t.categoria]=(map[t.categoria]||0)+t.valor; });
   const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]);
   if(sorted.length){
+    const catAtiva = document.getElementById('fil-cat').value;
     catDiv.innerHTML = sorted.map(([cat,val])=>{
       const cor=CAT_CORES[cat]||'#8A94A6';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      const ativa = catAtiva === cat;
+      return `<div onclick="filtrarCategoria('${cat}')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;padding-left:6px;padding-right:6px;${ativa?`background:${cor}18;`:''}" title="Filtrar por ${cat}">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="width:10px;height:10px;border-radius:50%;background:${cor};display:inline-block"></span>
-          <span style="font-size:14px">${cat}</span>
+          <span style="font-size:14px${ativa?`;color:${cor};font-weight:600`:''}">${cat}</span>
         </div>
-        <span style="font-weight:600;color:var(--red)">${fmt(val)}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-weight:600;color:var(--red)">${fmt(val)}</span>
+          <span style="font-size:11px;color:var(--muted)">${ativa?'✕ limpar':'ver →'}</span>
+        </div>
       </div>`;
     }).join('');
   } else {
@@ -714,6 +731,19 @@ function resetTxModal(){
   if(recBtn) recBtn.className = 'type-btn sel-rec';
   const viniBtn = document.querySelector('#modal-tx [data-val="vini"]');
   if(viniBtn) viniBtn.className = 'type-btn sel-acc';
+}
+
+function filtrarCategoria(cat){
+  const sel = document.getElementById('fil-cat');
+  sel.value = sel.value === cat ? '' : cat;
+  renderTransacoes();
+}
+
+function navigateToCat(cat){
+  showTab('transacoes', document.querySelectorAll('.nav-btn')[1]);
+  document.getElementById('fil-cat').value = cat;
+  renderTransacoes();
+  setTimeout(()=>{ document.getElementById('tab-transacoes').scrollIntoView({behavior:'smooth'}); },100);
 }
 
 function selTipo(btn, val){
