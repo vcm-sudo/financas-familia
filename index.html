@@ -874,7 +874,7 @@ Seja EXAUSTIVO — extraia toda transação, mesmo as pequenas (R$ 2,00, R$ 5,00
     const clean = text.replace(/```json|```/g,'').trim();
     const txs   = JSON.parse(clean);
 
-    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    previewData = txs.map((t,i) => ({ ...applyMemory({ ...t, conta, pessoa }), _id:i }));
     renderPreview();
   } catch(e){
     toast('Erro: '+e.message, true);
@@ -924,7 +924,7 @@ async function processOFX(file){
     });
 
     const skipped = txs.filter(t => t._faturaCartao).length;
-    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    previewData = txs.map((t,i) => ({ ...applyMemory({ ...t, conta, pessoa }), _id:i }));
     renderPreview();
     if(skipped > 0) toast(`${skipped} pagamento(s) de fatura detectado(s) — desmarcado(s) por padrão`);
   } catch(e){
@@ -1000,7 +1000,7 @@ async function processCSV(file){
 
     if(!txs.length) throw new Error('Nenhuma transação válida no CSV');
 
-    previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
+    previewData = txs.map((t,i) => ({ ...applyMemory({ ...t, conta, pessoa }), _id:i }));
     renderPreview();
   } catch(e){
     toast('Erro: '+e.message, true);
@@ -1023,6 +1023,36 @@ function parseCSVLine(line, sep){
   }
   out.push(cur);
   return out;
+}
+
+// ── Memória de categorias ─────────────────────────────────────────────────────
+function memoryCatKey(desc){
+  return desc.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim().slice(0,20);
+}
+function loadCatMemory(){
+  try { return JSON.parse(localStorage.getItem('cat_memory_v1') || '{}'); } catch(e){ return {}; }
+}
+function saveCatMemory(desc, cat){
+  const mem = loadCatMemory();
+  const key = memoryCatKey(desc);
+  if(key.length < 3) return;
+  mem[key] = cat;
+  localStorage.setItem('cat_memory_v1', JSON.stringify(mem));
+}
+function lookupCatMemory(desc){
+  const mem = loadCatMemory();
+  const norm = desc.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+  const key  = norm.slice(0,20);
+  if(mem[key]) return mem[key];
+  // Procura qualquer chave salva (≥8 chars) contida na descrição atual
+  for(const [k, v] of Object.entries(mem)){
+    if(k.length >= 8 && norm.includes(k)) return v;
+  }
+  return null;
+}
+function applyMemory(t){
+  const cat = lookupCatMemory(t.descricao);
+  return cat ? { ...t, categoria: cat } : t;
 }
 
 // Detecta pagamentos de fatura de cartão no extrato bancário
@@ -1060,7 +1090,7 @@ function renderPreview(){
       <input class="p-date" type="date" value="${t.data||''}" onchange="previewData[${i}].data=this.value">
       <input class="p-desc" type="text" value="${t.descricao||''}" onchange="previewData[${i}].descricao=this.value" placeholder="Descrição">
       <input class="p-val" type="number" value="${t.valor||0}" step="0.01" onchange="previewData[${i}].valor=parseFloat(this.value)">
-      <select class="p-cat" onchange="previewData[${i}].categoria=this.value">
+      <select class="p-cat" onchange="previewData[${i}].categoria=this.value;saveCatMemory(previewData[${i}].descricao,this.value)">
         ${CATEGORIAS.map(c=>`<option${c===t.categoria?' selected':''}>${c}</option>`).join('')}
       </select>
       <select style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px" onchange="previewData[${i}].tipo=this.value">
