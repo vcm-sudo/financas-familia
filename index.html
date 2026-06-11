@@ -1109,6 +1109,8 @@ function isCreditCardPayment(desc){
 function guessCategory(desc, tipo){
   if(tipo === 'receita') return /salario|salário|pagamento|provento/i.test(desc) ? 'Salário' : 'Outros';
   const d = desc.toLowerCase();
+  // E-commerce primeiro — tem prioridade sobre palavras genéricas (livro, roupa, mercado…)
+  if(/amazon|mercado.?livre|mercadolivre|shopee|magalu|magazine.?luiza|americanas|submarino|aliexpress|shein|wish/i.test(d)) return 'Comércio Eletrônico';
   if(/super|mercado|pao|açougue|padaria|hortifruti|ifood|rappi|restaur|lanche|food|burger|pizza|cafe|café/i.test(d)) return 'Alimentação';
   if(/aluguel|condomin|luz|agua|água|gas|gás|enel|sabesp|comgas|cemig|copel/i.test(d)) return 'Moradia';
   if(/farma|drogaria|hospital|clínica|clinica|médico|medico|dentista|exame|laboratório|laboratorio/i.test(d)) return 'Saúde';
@@ -1117,7 +1119,6 @@ function guessCategory(desc, tipo){
   if(/cinema|netflix|spotify|prime|disney|hbo|show|teatro|bar|cerveja|viagem/i.test(d)) return 'Lazer';
   if(/roupa|sapato|tênis|tenis|zara|renner|c&a|riachuelo|nike|adidas/i.test(d)) return 'Vestuário';
   if(/netflix|spotify|amazon prime|disney|apple|google|youtube|icloud|microsoft/i.test(d)) return 'Assinaturas';
-  if(/amazon|mercado.?livre|mercadolivre|shopee|magalu|magazine.?luiza|americanas|submarino|aliexpress|shein|wish/i.test(d)) return 'Comércio Eletrônico';
   if(/aplicação|aplicacao|investimento|cdb|tesouro|fundo|ações|acoes/i.test(d)) return 'Investimento';
   return 'Outros';
 }
