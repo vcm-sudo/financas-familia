@@ -1129,7 +1129,7 @@ function escHtml(str){
 
 // Detecta pagamentos de fatura de cartão no extrato bancário
 function isCreditCardPayment(desc){
-  return /pag[ao]?mento.{0,25}(fatura|cartao|cart[aã]o|visa|master|amex|elo|hipercard)|pgto.{0,15}(fat|cartao|cart[aã]o|visa|master)|fat(ura)?.{0,10}(cartao|cart[aã]o|visa|master|nubank)|nubank.{0,15}(fatura|fat)|d[eé]bito.{0,15}fatura/i.test(desc);
+  return /pag[ao]?mento.{0,25}(fatura|cartao|cart[aã]o|visa|master|amex|elo|hipercard)|pag[ao]?mento.{0,15}boleto.{0,80}(visa|master|\bmc\b|amex|elo|hipercard|unlimited|infinite|platinum|black|gold)|pgto.{0,15}(fat|cartao|cart[aã]o|visa|master)|fat(ura)?.{0,10}(cartao|cart[aã]o|visa|master|nubank)|nubank.{0,15}(fatura|fat)|d[eé]bito.{0,15}fatura/i.test(desc);
 }
 
 // Heurística de categoria a partir da descrição
