@@ -830,15 +830,16 @@ Extraia TODAS as transações que encontrar. Retorne SOMENTE um JSON válido, se
 ]
 
 REGRAS CRÍTICAS:
-1. Em FATURAS DE CARTÃO: tipo = "despesa" para todas as compras (mesmo as positivas). Só use "receita" para estornos, pagamentos da fatura, ou créditos explícitos.
-2. Em EXTRATOS BANCÁRIOS: "receita" para entradas/créditos, "despesa" para saídas/débitos.
-3. Datas no formato YYYY-MM-DD. Se a fatura tiver só DD/MM, use o ano da fatura (procure no cabeçalho).
-4. Valor sempre POSITIVO (sem sinal de menos).
-5. Para parcelamentos (ex: "3/12"), inclua a parcela na descrição.
-6. Para compras em moeda estrangeira, converta para o valor em reais que aparece.
-7. IGNORE: totais, subtotais, saldos, IOF, taxas de conversão isoladas (já estão embutidas), juros, encargos.
-8. Categorias mais comuns para faturas: Alimentação (mercados, restaurantes, ifood), Transporte (uber, postos, estacionamento), Lazer (cinema, bar, viagem), Saúde (farmácia, médico), Assinaturas (Netflix, Spotify), Vestuário (lojas de roupa).
-9. Use a descrição mais completa que aparecer (ex: "PADARIA SAO JOAO" e não só "PADARIA").
+1. Em FATURAS DE CARTÃO: tipo = "despesa" para todas as compras (mesmo as positivas). Estornos viram "receita".
+2. Em FATURAS DE CARTÃO: IGNORE completamente entradas de "Pagamento recebido", "Pagamento de fatura", "Pagto fatura", "Crédito de fatura" e similares — são pagamentos da fatura anterior, não transações reais.
+3. Em EXTRATOS BANCÁRIOS: "receita" para entradas/créditos, "despesa" para saídas/débitos.
+4. Datas no formato YYYY-MM-DD. Se a fatura tiver só DD/MM, use o ano da fatura (procure no cabeçalho).
+5. Valor sempre POSITIVO (sem sinal de menos).
+6. Para parcelamentos (ex: "3/12"), inclua a parcela na descrição.
+7. Para compras em moeda estrangeira, converta para o valor em reais que aparece.
+8. IGNORE: totais, subtotais, saldos, IOF, taxas de conversão isoladas (já estão embutidas), juros, encargos.
+9. Categorias mais comuns para faturas: Alimentação (mercados, restaurantes, ifood), Transporte (uber, postos, estacionamento), Lazer (cinema, bar, viagem), Saúde (farmácia, médico), Assinaturas (Netflix, Spotify), Vestuário (lojas de roupa).
+10. Use a descrição mais completa que aparecer (ex: "PADARIA SAO JOAO" e não só "PADARIA").
 
 Seja EXAUSTIVO — extraia toda transação, mesmo as pequenas (R$ 2,00, R$ 5,00).`;
 
@@ -911,17 +912,21 @@ async function processOFX(file){
       const amt = parseFloat(get('TRNAMT')) || 0;
       const memo = get('MEMO') || get('NAME') || 'Sem descrição';
       const tipo = (amt > 0 || trnType === 'CREDIT') ? 'receita' : 'despesa';
+      const _faturaCartao = isCreditCardPayment(memo);
       return {
         descricao: memo,
         valor: Math.abs(amt),
         data,
         tipo,
-        categoria: guessCategory(memo, tipo)
+        categoria: guessCategory(memo, tipo),
+        _faturaCartao
       };
     });
 
+    const skipped = txs.filter(t => t._faturaCartao).length;
     previewData = txs.map((t,i) => ({ ...t, conta, pessoa, _id:i }));
     renderPreview();
+    if(skipped > 0) toast(`${skipped} pagamento(s) de fatura detectado(s) — desmarcado(s) por padrão`);
   } catch(e){
     toast('Erro: '+e.message, true);
     console.error(e);
@@ -1020,6 +1025,11 @@ function parseCSVLine(line, sep){
   return out;
 }
 
+// Detecta pagamentos de fatura de cartão no extrato bancário
+function isCreditCardPayment(desc){
+  return /pag[ao]?mento.{0,25}(fatura|cartao|cart[aã]o|visa|master|amex|elo|hipercard)|pgto.{0,15}(fat|cartao|cart[aã]o|visa|master)|fat(ura)?.{0,10}(cartao|cart[aã]o|visa|master|nubank)|nubank.{0,15}(fatura|fat)|d[eé]bito.{0,15}fatura/i.test(desc);
+}
+
 // Heurística de categoria a partir da descrição
 function guessCategory(desc, tipo){
   if(tipo === 'receita') return /salario|salário|pagamento|provento/i.test(desc) ? 'Salário' : 'Outros';
@@ -1038,9 +1048,15 @@ function guessCategory(desc, tipo){
 
 function renderPreview(){
   const list = document.getElementById('preview-list');
-  list.innerHTML = previewData.map((t,i) => `
-    <div class="preview-row" id="prev-${i}">
-      <input type="checkbox" class="preview-chk" checked id="chk-${i}">
+  const totalMarcadas = previewData.filter(t => !t._faturaCartao).length;
+
+  list.innerHTML = previewData.map((t,i) => {
+    const isFatura = !!t._faturaCartao;
+    const rowStyle = isFatura ? 'opacity:0.5;background:#F8717108;border-color:#F8717133;' : '';
+    const aviso = isFatura ? `<span title="Provável pagamento de fatura — já contabilizado via PDF do cartão" style="font-size:11px;color:var(--red);white-space:nowrap">⚠️ fatura</span>` : '';
+    return `
+    <div class="preview-row" id="prev-${i}" style="${rowStyle}">
+      <input type="checkbox" class="preview-chk" ${isFatura ? '' : 'checked'} id="chk-${i}">
       <input class="p-date" type="date" value="${t.data||''}" onchange="previewData[${i}].data=this.value">
       <input class="p-desc" type="text" value="${t.descricao||''}" onchange="previewData[${i}].descricao=this.value" placeholder="Descrição">
       <input class="p-val" type="number" value="${t.valor||0}" step="0.01" onchange="previewData[${i}].valor=parseFloat(this.value)">
@@ -1051,10 +1067,13 @@ function renderPreview(){
         <option value="despesa"${t.tipo==='despesa'?' selected':''}>↓ Desp.</option>
         <option value="receita"${t.tipo==='receita'?' selected':''}>↑ Rec.</option>
       </select>
-    </div>
-  `).join('');
+      ${aviso}
+    </div>`;
+  }).join('');
 
-  document.getElementById('preview-count').textContent = `${previewData.length} transações encontradas`;
+  const faturas = previewData.filter(t => t._faturaCartao).length;
+  const info = faturas > 0 ? ` (${faturas} pag. fatura desmarcado${faturas>1?'s':''})` : '';
+  document.getElementById('preview-count').textContent = `${previewData.length} transações encontradas — ${totalMarcadas} selecionadas${info}`;
   document.getElementById('pdf-preview').style.display='block';
 }
 
