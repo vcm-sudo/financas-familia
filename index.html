@@ -387,6 +387,12 @@ tbody td{padding:10px 0;font-size:14px;}
       </div>
     </div>
     <button class="btn btn-green" style="width:100%;margin-top:6px" onclick="saveSettings()">Salvar</button>
+    <hr style="border-color:var(--border);margin:18px 0;">
+    <div style="color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Manutenção</div>
+    <button class="btn btn-amber" style="width:100%" onclick="migrateCategorias()">Recategorizar transações existentes</button>
+    <div style="color:var(--muted);font-size:11px;margin-top:6px;line-height:1.5">
+      Aplica as regras de categoria atuais (ex: Amazon → Comércio Eletrônico) em todas as transações já salvas.
+    </div>
   </div>
 </div>
 
@@ -791,6 +797,45 @@ function saveSettings(){
 function loadSettings(){
   const key = localStorage.getItem('anthropic_api_key') || '';
   document.getElementById('api-key').value = key;
+}
+
+async function migrateCategorias(){
+  const btn = document.querySelector('#modal-settings .btn-amber');
+  btn.textContent = 'Verificando…';
+  btn.disabled = true;
+
+  try {
+    const snap = await db.collection('transacoes').get();
+    const toUpdate = snap.docs.filter(doc => {
+      const { descricao = '', categoria } = doc.data();
+      const novacat = guessCategory(descricao, 'despesa');
+      return novacat !== 'Outros' && novacat !== categoria;
+    });
+
+    if(!toUpdate.length){
+      toast('Todas as transações já estão bem categorizadas ✓');
+      return;
+    }
+
+    const BATCH_SIZE = 400;
+    for(let i = 0; i < toUpdate.length; i += BATCH_SIZE){
+      const batch = db.batch();
+      toUpdate.slice(i, i + BATCH_SIZE).forEach(doc => {
+        const { descricao = '' } = doc.data();
+        batch.update(doc.ref, { categoria: guessCategory(descricao, 'despesa') });
+      });
+      await batch.commit();
+    }
+
+    toast(`${toUpdate.length} transações recategorizadas ✓`);
+    closeModal('modal-settings');
+  } catch(e){
+    toast('Erro: ' + e.message, true);
+    console.error(e);
+  } finally {
+    btn.textContent = 'Recategorizar transações existentes';
+    btn.disabled = false;
+  }
 }
 
 // ── PDF via Anthropic API ─────────────────────────────────────────────────────
