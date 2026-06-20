@@ -138,6 +138,14 @@ tbody td{padding:10px 0;font-size:14px;}
 .dot-vini{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--vini);margin-right:5px;}
 .dot-esp{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--esposa);margin-right:5px;}
 
+/* IMPORT STATUS */
+.import-banner{display:none;background:#FBBF2412;border:1px solid #FBBF2444;border-radius:12px;padding:13px 18px;margin-bottom:18px;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;}
+.import-banner.show{display:flex;}
+.import-banner-txt{font-size:13px;color:var(--text);line-height:1.5;}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+.import-status-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.import-status-item:last-child{border-bottom:none;}
+
 @media(max-width:680px){
   .header,.nav,.content{padding-left:14px;padding-right:14px;}
   .grid2{grid-template-columns:1fr;}
@@ -183,6 +191,15 @@ tbody td{padding:10px 0;font-size:14px;}
   </nav>
 
   <div class="content">
+
+    <!-- AVISO DE IMPORTAÇÃO PENDENTE -->
+    <div class="import-banner" id="import-banner">
+      <div class="import-banner-txt" id="import-banner-txt"></div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button class="btn btn-amber" onclick="goToImport()">Importar agora</button>
+        <button class="btn-ghost" onclick="dismissImportBanner()">Dispensar</button>
+      </div>
+    </div>
 
     <!-- DASHBOARD -->
     <div id="tab-dashboard" class="tab active">
@@ -283,6 +300,14 @@ tbody td{padding:10px 0;font-size:14px;}
 
     <!-- IMPORTAR -->
     <div id="tab-pdf" class="tab">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="sec-title">Status de importação</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:10px;">
+          Último mês importado por conta. Mês esperado (anterior): <strong id="import-expected" style="color:var(--text)">—</strong>.
+        </div>
+        <div id="import-status-list"></div>
+      </div>
+
       <div class="card" style="margin-bottom:18px;">
         <div class="sec-title">Importar extrato ou fatura</div>
         <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">
@@ -435,6 +460,8 @@ const CAT_CORES  = {
   "Comércio Eletrônico":"#FB923C","Salário":"#6EE7B7","Investimento":"#FCD34D","Outros":"#8A94A6"
 };
 const CONTA_CORES = { "Nubank":"#820AD1","Bradesco":"#CC0000","Mastercard":"#EB001B","Visa":"#1A1F71","Outros":"#8A94A6" };
+const CONTA_TIPO  = { "Nubank":"extrato","Bradesco":"extrato","Mastercard":"fatura","Visa":"fatura","Outros":"extrato" };
+let importBannerDismissed = false;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function loginGoogle(){
@@ -470,6 +497,7 @@ function listenTx(){
     populateMesFilter();
     renderDashboard();
     renderTransacoes();
+    renderImportStatus();
   });
 }
 
@@ -600,6 +628,78 @@ function renderFluxoChart(){
       }
     }
   });
+}
+
+// ── STATUS DE IMPORTAÇÃO ──────────────────────────────────────────────────────
+function monthLabel(m){
+  if(!m) return '—';
+  const [y,mo] = m.split('-');
+  return `${MESES_NOME[parseInt(mo)-1]} ${y}`;
+}
+// Mês anterior ao atual (YYYY-MM) — é o extrato/fatura que você normalmente importa
+function prevMonthStr(){
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth() - 1; // getMonth() é 0-indexed
+  if(m < 0){ m = 11; y -= 1; }
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+
+function renderImportStatus(){
+  const expected = prevMonthStr();
+  document.getElementById('import-expected').textContent = monthLabel(expected);
+
+  // Último mês importado por conta (só contas que já têm histórico)
+  const last = {};
+  ALL_TX.forEach(t => {
+    const m = t.data?.slice(0,7);
+    if(!m || !t.conta) return;
+    if(!last[t.conta] || m > last[t.conta]) last[t.conta] = m;
+  });
+
+  const contas  = Object.keys(last).sort();
+  const listEl  = document.getElementById('import-status-list');
+  const banner  = document.getElementById('import-banner');
+
+  if(!contas.length){
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:8px 0">Importe um extrato ou fatura para começar.</div>';
+    banner.classList.remove('show');
+    return;
+  }
+
+  const pendentes = [];
+  listEl.innerHTML = contas.map(c => {
+    const cor   = CONTA_CORES[c] || '#8A94A6';
+    const tipo  = CONTA_TIPO[c]  || 'extrato';
+    const lm    = last[c];
+    const emDia = lm >= expected;
+    if(!emDia) pendentes.push({ conta:c, tipo });
+    const status = emDia
+      ? `<span style="color:var(--green);font-size:13px;font-weight:600">✓ em dia</span>`
+      : `<span style="color:var(--amber);font-size:13px;font-weight:600">⚠ falta ${escHtml(monthLabel(expected))}</span>`;
+    return `<div class="import-status-item">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="badge" style="background:${cor}22;color:${cor};border-color:${cor}44">${escHtml(c)}</span>
+        <span style="font-size:13px;color:var(--muted)">último ${tipo}: <strong style="color:var(--text)">${escHtml(monthLabel(lm))}</strong></span>
+      </div>
+      ${status}
+    </div>`;
+  }).join('');
+
+  if(pendentes.length && !importBannerDismissed){
+    const itens = pendentes.map(p => `<strong>${escHtml(p.conta)}</strong> (${p.tipo} de ${escHtml(monthLabel(expected))})`).join(', ');
+    document.getElementById('import-banner-txt').innerHTML = `⚠️ Falta importar: ${itens}.`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function goToImport(){
+  showTab('pdf', document.querySelectorAll('.nav-btn')[2]);
+}
+function dismissImportBanner(){
+  importBannerDismissed = true;
+  document.getElementById('import-banner').classList.remove('show');
 }
 
 // ── TRANSAÇÕES ────────────────────────────────────────────────────────────────
