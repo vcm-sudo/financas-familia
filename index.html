@@ -413,14 +413,12 @@ tbody td{padding:10px 0;font-size:14px;}
       <button class="modal-close" onclick="closeModal('modal-settings')">×</button>
     </div>
     <div class="fg">
-      <label class="flbl">Anthropic API Key (para ler PDF)</label>
-      <input class="finp" id="api-key" type="password" placeholder="sk-ant-api03-...">
-      <div style="color:var(--muted);font-size:11px;margin-top:6px;line-height:1.5">
-        Salva só no seu navegador (localStorage), nunca vai para o servidor.<br>
-        Obter em: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com/settings/keys</a>
+      <div style="color:var(--muted);font-size:11px;margin-top:2px;line-height:1.5">
+        A leitura de PDF usa o Claude Code (assinatura) rodando no seu Mac, via o
+        servidor local. Não precisa mais de API key. Só funciona com o app aberto
+        por <strong>localhost</strong> no Mac; no site/celular use OFX ou CSV.
       </div>
     </div>
-    <button class="btn btn-green" style="width:100%;margin-top:6px" onclick="saveSettings()">Salvar</button>
     <hr style="border-color:var(--border);margin:18px 0;">
     <div style="color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Manutenção</div>
     <button class="btn btn-amber" style="width:100%" onclick="migrateCategorias()">Recategorizar transações existentes</button>
@@ -477,7 +475,6 @@ auth.onAuthStateChanged(u => {
     document.getElementById('uavatar').src=u.photoURL||'';
     document.getElementById('hdr-sub').textContent='Vinicius & Esposa · '+new Date().getFullYear();
     initTxDate();
-    loadSettings();
     listenTx();
   } else {
     document.getElementById('login-screen').style.display='flex';
@@ -903,18 +900,6 @@ function routeFile(file){
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function saveSettings(){
-  const key = document.getElementById('api-key').value.trim();
-  if(key) localStorage.setItem('anthropic_api_key', key);
-  closeModal('modal-settings');
-  toast('Configurações salvas ✓');
-}
-
-function loadSettings(){
-  const key = localStorage.getItem('anthropic_api_key') || '';
-  document.getElementById('api-key').value = key;
-}
-
 async function migrateCategorias(){
   const btn = document.querySelector('#modal-settings .btn-amber');
   btn.textContent = 'Verificando…';
@@ -953,16 +938,21 @@ async function migrateCategorias(){
   }
 }
 
-// ── PDF via Anthropic API ─────────────────────────────────────────────────────
+// ── PDF via Claude Code CLI (assinatura, servidor local) ──────────────────────
+// A leitura de PDF NÃO usa mais a API por token. O navegador manda o PDF para o
+// servidor local (servidor.py), que roda o Claude Code CLI pela assinatura.
+// Só funciona rodando o app localmente no Mac (localhost). No site hospedado
+// (GitHub Pages) e no celular, use OFX/CSV — esses são 100% locais no navegador.
+function isLocalHost(){
+  return ['localhost','127.0.0.1','::1'].includes(location.hostname);
+}
 async function processPDF(file){
-  const apiKey = localStorage.getItem('anthropic_api_key');
-  if(!apiKey){
-    toast('Configure sua API key em ⚙️ primeiro', true);
-    openModal('modal-settings');
+  if(!isLocalHost()){
+    toast('Import de PDF só funciona no app local do Mac. Aqui use OFX ou CSV.', true);
     return;
   }
 
-  document.getElementById('loading-text').textContent = 'Analisando PDF com IA…';
+  document.getElementById('loading-text').textContent = 'Analisando PDF com IA (assinatura)…';
   document.getElementById('pdf-loading').style.display='block';
   document.getElementById('pdf-preview').style.display='none';
 
@@ -971,68 +961,17 @@ async function processPDF(file){
     const conta  = document.getElementById('pdf-conta').value;
     const pessoa = document.getElementById('pdf-pessoa').value;
 
-    const prompt = `Você é um assistente financeiro especializado em ler extratos bancários e faturas de cartão de crédito brasileiros.
-
-Este PDF pode ser:
-- **Extrato bancário** (conta corrente): tem entradas (créditos) e saídas (débitos)
-- **Fatura de cartão de crédito**: TODAS as compras são despesas (saídas), mesmo que apareçam como valores positivos. Estornos/créditos viram receitas.
-
-Extraia TODAS as transações que encontrar. Retorne SOMENTE um JSON válido, sem texto antes ou depois:
-
-[
-  {
-    "descricao": "estabelecimento ou descrição completa",
-    "valor": 99.90,
-    "data": "2025-06-10",
-    "tipo": "despesa",
-    "categoria": "uma de: Alimentação, Moradia, Saúde, Educação, Transporte, Lazer, Vestuário, Assinaturas, Salário, Investimento, Outros"
-  }
-]
-
-REGRAS CRÍTICAS:
-1. Em FATURAS DE CARTÃO: tipo = "despesa" para todas as compras (mesmo as positivas). Estornos viram "receita".
-2. Em FATURAS DE CARTÃO: IGNORE completamente entradas de "Pagamento recebido", "Pagamento de fatura", "Pagto fatura", "Crédito de fatura" e similares — são pagamentos da fatura anterior, não transações reais.
-3. Em EXTRATOS BANCÁRIOS: "receita" para entradas/créditos, "despesa" para saídas/débitos.
-4. Datas no formato YYYY-MM-DD. Se a fatura tiver só DD/MM, use o ano da fatura (procure no cabeçalho).
-5. Valor sempre POSITIVO (sem sinal de menos).
-6. Para parcelamentos (ex: "3/12"), inclua a parcela na descrição.
-7. Para compras em moeda estrangeira, converta para o valor em reais que aparece.
-8. IGNORE: totais, subtotais, saldos, IOF, taxas de conversão isoladas (já estão embutidas), juros, encargos.
-9. Categorias mais comuns para faturas: Alimentação (mercados, restaurantes, ifood), Transporte (uber, postos, estacionamento), Lazer (cinema, bar, viagem), Saúde (farmácia, médico), Assinaturas (Netflix, Spotify), Vestuário (lojas de roupa).
-10. Use a descrição mais completa que aparecer (ex: "PADARIA SAO JOAO" e não só "PADARIA").
-
-Seja EXAUSTIVO — extraia toda transação, mesmo as pequenas (R$ 2,00, R$ 5,00).`;
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/extrair-pdf', {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model:'claude-opus-4-8',
-        max_tokens:8000,
-        messages:[{
-          role:'user',
-          content:[
-            { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
-            { type:'text', text:prompt }
-          ]
-        }]
-      })
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ b64: base64 })
     });
 
+    const data = await resp.json().catch(()=>({}));
     if(!resp.ok){
-      const err = await resp.text();
-      throw new Error(`API ${resp.status}: ${err.slice(0,200)}`);
+      throw new Error(data?.error || `HTTP ${resp.status}`);
     }
-
-    const data = await resp.json();
-    const text = data.content?.find(c=>c.type==='text')?.text || '[]';
-    const clean = text.replace(/```json|```/g,'').trim();
-    const txs   = JSON.parse(clean);
+    const txs = Array.isArray(data.transacoes) ? data.transacoes : [];
 
     previewData = txs.map((t,i) => ({ ...applyMemory({ ...t, conta, pessoa }), _id:i }));
     renderPreview();

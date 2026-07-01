@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project: Transações Família
 
@@ -15,7 +15,7 @@ Family financial management web app for tracking and importing transactions.
 - **Backend**: Firebase Authentication + Firestore
 - **Charts**: Chart.js 4.4 (CDN)
 - **Hosting**: GitHub Pages — push to `main` deploys automatically
-- **AI (PDF extraction)**: Claude Code CLI (`claude`, `claude-opus-4-8`) on the **subscription**, via a local bridge server (`servidor.py`, `POST /extrair-pdf`). The old direct `api.anthropic.com` browser call and the in-app API-key field were removed. PDF import only works when the app is opened locally on the Mac (`localhost`, run `iniciar-financas.command` → serves on :8742); on GitHub Pages / phone it degrades to a message pointing at OFX/CSV. OFX and CSV import are pure client-side and keep working everywhere.
+- **AI (PDF extraction)**: Codex CLI (`codex`, `Codex-opus-4-8`) on the **subscription**, via a local bridge server (`servidor.py`, `POST /extrair-pdf`). The old direct `api.anthropic.com` browser call and the in-app API-key field were removed. PDF import only works when the app is opened locally on the Mac (`localhost`, run `iniciar-financas.command` → serves on :8742); on GitHub Pages / phone it degrades to a message pointing at OFX/CSV. OFX and CSV import are pure client-side and keep working everywhere.
 
 ### Deploy
 
@@ -35,10 +35,10 @@ open iniciar-financas.command   # kills :8742, starts servidor.py, opens localho
 ```
 
 `servidor.py` serves the static files **and** exposes `POST /extrair-pdf`, which writes the
-uploaded PDF to a temp file and runs the Claude Code CLI (`claude … --allowedTools Read
---model claude-opus-4-8`) with `ANTHROPIC_API_KEY` stripped from the env, so PDF OCR runs on
+uploaded PDF to a temp file and runs the Codex CLI (`codex … --allowedTools Read
+--model Codex-opus-4-8`) with `ANTHROPIC_API_KEY` stripped from the env, so PDF OCR runs on
 the subscription (same pattern as `../Dashboard Hemato/servidor.py` and
-`../Transcrição exames/lab_transcribe.py`). `claude` must be installed and logged in.
+`../Transcrição exames/lab_transcribe.py`). The CLI must be installed and logged in.
 
 ### Verify changes with Playwright (Python)
 
@@ -46,7 +46,7 @@ the subscription (same pattern as `../Dashboard Hemato/servidor.py` and
 python3 - << 'EOF'
 import asyncio
 from playwright.async_api import async_playwright
-FILE = "file:///Users/viniciuscamposdemolla/pCloud%20Drive/_/Claude/Transa%C3%A7%C3%B5es/index.html"
+FILE = "file:///Users/viniciuscamposdemolla/pCloud%20Drive/_/Codex/Transa%C3%A7%C3%B5es/index.html"
 async def main():
     async with async_playwright() as p:
         page = await (await p.chromium.launch()).new_page()
@@ -73,7 +73,7 @@ Line numbers drift as the file grows — treat them as approximate and confirm b
 | 705–783 | Transações render (category breakdown, chronological list, sort) |
 | 784–881 | Transaction CRUD (add, edit, delete modal) |
 | 882–955 | Import routing (`routeFile`, `handleFile`, `handleDrop`) + settings + `migrateCategorias` |
-| ~956+ | PDF → local `/extrair-pdf` (Claude CLI, subscription) → preview; `isLocalHost()` guard |
+| ~956+ | PDF → local `/extrair-pdf` (Codex CLI, subscription) → preview; `isLocalHost()` guard |
 | 1048–1098 | OFX parser |
 | 1099–1189 | CSV parser |
 | 1190–1230 | Category memory (`loadCatMemory`, `saveCatMemory`, `lookupCatMemory`, `applyMemory`) + `escHtml` |
