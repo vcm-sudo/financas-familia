@@ -64,22 +64,23 @@ Line numbers drift as the file grows — treat them as approximate and confirm b
 | Lines | Section |
 |---|---|
 | 11–155 | CSS — variables, layout, components, import banner/status |
-| 157–434 | HTML — login, header/nav, import-pending banner, dashboard/transações/import tabs, modals |
-| 436–464 | Firebase init + global state (`ALL_TX`, `filtros`, `editingId`, `importBannerDismissed`) + constants |
-| 466–492 | Auth (`loginGoogle`, `onAuthStateChanged`) |
-| 493–536 | Firestore listener, month filter population, `txFiltradas()` |
-| 547–631 | Dashboard render (KPIs, charts, table) |
-| 633–704 | Import status (`prevMonthStr`, `monthLabel`, `renderImportStatus`, banner show/dismiss) |
-| 705–783 | Transações render (category breakdown, chronological list, sort) |
-| 784–881 | Transaction CRUD (add, edit, delete modal) |
-| 882–955 | Import routing (`routeFile`, `handleFile`, `handleDrop`) + settings + `migrateCategorias` |
-| ~956+ | PDF → local `/extrair-pdf` (Claude CLI, subscription) → preview; `isLocalHost()` guard |
-| 1048–1098 | OFX parser |
-| 1099–1189 | CSV parser |
-| 1190–1230 | Category memory (`loadCatMemory`, `saveCatMemory`, `lookupCatMemory`, `applyMemory`) + `escHtml` |
-| 1231–1253 | `isCreditCardPayment`, `guessCategory` |
-| 1254–1313 | `renderPreview`, `updatePreviewCount`, `savePreview`, `cancelPreview` |
-| 1314–1352 | Helpers (`fmt`, `fmtDate`, `fileToBase64`, `toast`, modal/tab utils) |
+| 157–432 | HTML — login, header/nav, import-pending banner, dashboard/transações/import tabs, modals |
+| 433–463 | `<script>` start · Firebase init + global state (`ALL_TX`, `filtros`, `editingId`, `importBannerDismissed`) + constants |
+| 464–489 | Auth (`loginGoogle`, `onAuthStateChanged`) |
+| 490–533 | Firestore listener, month filter population, `txFiltradas()` |
+| 534–543 | Toggle pessoa (dashboard) |
+| 544–629 | Dashboard render (KPIs, charts, table) |
+| 630–701 | Import status (`prevMonthStr`, `monthLabel`, `renderImportStatus`, banner show/dismiss) |
+| 702–780 | Transações render (category breakdown, chronological list, sort) |
+| 781–878 | Transaction CRUD (delete modal @781, add/edit form @813) |
+| 879–940 | Import routing (`routeFile`, `handleFile`, `handleDrop`) + settings + `migrateCategorias` |
+| 941–986 | PDF → local `/extrair-pdf` (Claude CLI, subscription) → preview; `isLocalHost()` guard |
+| 987–1037 | OFX parser |
+| 1038–1128 | CSV parser |
+| 1129–1169 | Category memory (`loadCatMemory`, `saveCatMemory`, `lookupCatMemory`, `applyMemory`) + `escHtml` @1165 |
+| 1170–1192 | `isCreditCardPayment` @1170, `guessCategory` @1175 |
+| 1193–1252 | `renderPreview` @1193, `updatePreviewCount` @1221, `savePreview` @1229, `cancelPreview` |
+| 1253–1291 | Helpers (`fmt`, `fmtDate`, `fileToBase64`, `toast`, modal/tab utils) |
 
 ### Data Model
 
@@ -98,10 +99,10 @@ criadoEm   string  ISO timestamp
 
 ### Key Constants (update all of these together when adding a category or account)
 
-**CATEGORIAS** (array, ~line 456): controls all dropdowns and chart legend  
-**CAT_CORES** (object, ~line 457): hex color per category  
-**CONTA_CORES** (object, ~line 462): hex color per account — `Nubank #820AD1`, `Bradesco #CC0000`, `Mastercard #EB001B`, `Visa #1A1F71`  
-**CONTA_TIPO** (object, ~line 463): `"extrato"` or `"fatura"` per account — drives the wording in the import-status panel (cartões = fatura, contas = extrato)  
+**CATEGORIAS** (array, line 454): controls all dropdowns and chart legend  
+**CAT_CORES** (object, line 455): hex color per category  
+**CONTA_CORES** (object, line 460): hex color per account — `Nubank #820AD1`, `Bradesco #CC0000`, `Mastercard #EB001B`, `Visa #1A1F71`  
+**CONTA_TIPO** (object, line 461): `"extrato"` or `"fatura"` per account — drives the wording in the import-status panel (cartões = fatura, contas = extrato)  
 **HTML `<option>` lists**: `fil-conta`, `tx-conta`, `pdf-conta`, `fil-cat`, `tx-cat` — must stay in sync with constants above
 
 ### Import Logic
@@ -112,6 +113,8 @@ Three parsers share the same post-processing pipeline:
 3. `renderPreview()` — shows editable rows; changing a category calls `saveCatMemory()` to persist the mapping
 
 **Double-counting prevention**: OFX and CSV both call `isCreditCardPayment`. PDF prompt instructs the AI to skip "pagamento de fatura" credits. The migration button (⚙️ → Recategorizar) re-applies `guessCategory` using the stored `tipo` field.
+
+**Sibling app (PJ income)**: the NF-tracking app at `../vcmltda/nf/` exports paid invoices as a `;`-separated CSV (receita, categoria Salário, net value) that is imported here via the same CSV parser — so `Salário` receitas with descriptions like `NF 0001 - <cliente> (PJ, líquido)` originate there. See `../vcmltda/nf/CLAUDE.md`.
 
 ### Import Status / pending-month reminder
 
@@ -132,4 +135,4 @@ Keys are the first 20 chars of `desc.toLowerCase().replace(/[^a-z0-9 ]/g,'')`. `
 
 ### XSS Safety
 
-All user-derived values inserted into `innerHTML` must go through `escHtml()` (~line 1226). This includes `t.descricao`, `t.data`, category names from Firestore. Use `data-*` attributes + event delegation instead of inline `onclick="...${value}..."`.
+All user-derived values inserted into `innerHTML` must go through `escHtml()` (line 1165). This includes `t.descricao`, `t.data`, category names from Firestore. Use `data-*` attributes + event delegation instead of inline `onclick="...${value}..."`.
