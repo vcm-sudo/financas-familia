@@ -204,7 +204,7 @@ tbody td{padding:10px 0;font-size:14px;}
   <div class="login-card">
     <div class="login-logo">💳</div>
     <div class="login-title">Transações Família</div>
-    <div class="login-sub">Vinicius &amp; Esposa · controle financeiro</div>
+    <div class="login-sub">Vinicius &amp; Raissa · controle financeiro</div>
     <button class="btn-google" onclick="loginGoogle()">
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
       Entrar com Google
@@ -256,7 +256,7 @@ tbody td{padding:10px 0;font-size:14px;}
             <option value="">Todos os meses</option>
           </select>
           <button class="filter-toggle on" id="ft-vini" onclick="toggleFiltro('vini')">● Vinicius</button>
-          <button class="filter-toggle on-esposa" id="ft-esp" onclick="toggleFiltro('esposa')">● Esposa</button>
+          <button class="filter-toggle on-esposa" id="ft-esp" onclick="toggleFiltro('esposa')">● Raissa</button>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ tbody td{padding:10px 0;font-size:14px;}
           <select class="filter-select" id="fil-pessoa" onchange="renderTransacoes()">
             <option value="">Todos</option>
             <option value="vini">Vinicius</option>
-            <option value="esposa">Esposa</option>
+            <option value="esposa">Raissa</option>
           </select>
           <select class="filter-select" id="fil-ordem" onchange="renderTransacoes()">
             <option value="data-desc">Data ↓ (mais recente)</option>
@@ -410,7 +410,7 @@ tbody td{padding:10px 0;font-size:14px;}
           </select>
           <select class="filter-select" id="pdf-pessoa">
             <option value="vini">Vinicius</option>
-            <option value="esposa">Esposa</option>
+            <option value="esposa">Raissa</option>
           </select>
         </div>
       </div>
@@ -474,7 +474,7 @@ tbody td{padding:10px 0;font-size:14px;}
       <label class="flbl">Pessoa</label>
       <div class="type-btns">
         <button class="type-btn sel-acc" onclick="selPessoa(this,'vini')" data-val="vini">● Vinicius</button>
-        <button class="type-btn" onclick="selPessoa(this,'esposa')" data-val="esposa">● Esposa</button>
+        <button class="type-btn" onclick="selPessoa(this,'esposa')" data-val="esposa">● Raissa</button>
       </div>
       <input type="hidden" id="tx-pessoa" value="vini">
     </div>
@@ -554,7 +554,7 @@ auth.onAuthStateChanged(u => {
     document.getElementById('app').style.display='block';
     document.getElementById('uname').textContent=u.displayName?.split(' ')[0]||u.email;
     document.getElementById('uavatar').src=u.photoURL||'';
-    document.getElementById('hdr-sub').textContent='Vinicius & Esposa · '+new Date().getFullYear();
+    document.getElementById('hdr-sub').textContent='Vinicius & Raissa · '+new Date().getFullYear();
     initTxDate();
     listenTx();
   } else {
@@ -626,7 +626,7 @@ function toggleFiltro(p){
 function personLabel(){
   if(filtros.vini && filtros.esposa) return 'Família';
   if(filtros.vini) return 'Vinicius';
-  if(filtros.esposa) return 'Esposa';
+  if(filtros.esposa) return 'Raissa';
   return 'Ninguém selecionado';
 }
 
@@ -644,9 +644,9 @@ function renderDashboard(){
   const esposaRec = tx.filter(t=>t.tipo==='receita'&&t.pessoa==='esposa').reduce((a,t)=>a+t.valor,0);
 
   document.getElementById('kpi-rec').textContent   = fmt(rec);
-  document.getElementById('kpi-rec-sub').textContent  = `Vini ${fmtK(viniRec)} · Esposa ${fmtK(esposaRec)}`;
+  document.getElementById('kpi-rec-sub').textContent  = `Vini ${fmtK(viniRec)} · Raissa ${fmtK(esposaRec)}`;
   document.getElementById('kpi-desp').textContent  = fmt(desp);
-  document.getElementById('kpi-desp-sub').textContent = `Vini ${fmtK(viniDesp)} · Esposa ${fmtK(esposaDesp)}`;
+  document.getElementById('kpi-desp-sub').textContent = `Vini ${fmtK(viniDesp)} · Raissa ${fmtK(esposaDesp)}`;
   const ks = document.getElementById('kpi-saldo');
   ks.textContent = fmt(saldo);
   ks.style.color = saldo>=0?'var(--green)':'var(--red)';
@@ -922,7 +922,7 @@ function rowHTML(t, showDel){
   const sinal = isRec?'+':'-';
   const pessoaDot = t.pessoa==='vini'
     ? `<span class="dot-vini"></span>Vinicius`
-    : `<span class="dot-esp"></span>Esposa`;
+    : `<span class="dot-esp"></span>Raissa`;
   const contaCor = CONTA_CORES[t.conta]||'#8A94A6';
   const delBtn = showDel ? `<button class="btn-del" onclick="editTx('${t.id}')" title="Editar" style="color:var(--accent);margin-right:2px">✎</button><button class="btn-del" onclick="delTx('${t.id}')" title="Remover">×</button>` : '';
   return `<tr>
