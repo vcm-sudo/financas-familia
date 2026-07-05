@@ -63,24 +63,24 @@ Line numbers drift as the file grows — treat them as approximate and confirm b
 
 | Lines | Section |
 |---|---|
-| 11–155 | CSS — variables, layout, components, import banner/status |
-| 157–432 | HTML — login, header/nav, import-pending banner, dashboard/transações/import tabs, modals |
-| 433–463 | `<script>` start · Firebase init + global state (`ALL_TX`, `filtros`, `editingId`, `importBannerDismissed`) + constants |
-| 464–489 | Auth (`loginGoogle`, `onAuthStateChanged`) |
-| 490–533 | Firestore listener, month filter population, `txFiltradas()` |
-| 534–543 | Toggle pessoa (dashboard) |
-| 544–629 | Dashboard render (KPIs, charts, table) |
-| 630–701 | Import status (`prevMonthStr`, `monthLabel`, `renderImportStatus`, banner show/dismiss) |
-| 702–780 | Transações render (category breakdown, chronological list, sort) |
-| 781–878 | Transaction CRUD (delete modal @781, add/edit form @813) |
-| 879–940 | Import routing (`routeFile`, `handleFile`, `handleDrop`) + settings + `migrateCategorias` |
-| 941–986 | PDF → local `/extrair-pdf` (Claude CLI, subscription) → preview; `isLocalHost()` guard |
-| 987–1037 | OFX parser |
-| 1038–1128 | CSV parser |
-| 1129–1169 | Category memory (`loadCatMemory`, `saveCatMemory`, `lookupCatMemory`, `applyMemory`) + `escHtml` @1165 |
-| 1170–1192 | `isCreditCardPayment` @1170, `guessCategory` @1175 |
-| 1193–1252 | `renderPreview` @1193, `updatePreviewCount` @1221, `savePreview` @1229, `cancelPreview` |
-| 1253–1291 | Helpers (`fmt`, `fmtDate`, `fileToBase64`, `toast`, modal/tab utils) |
+| 11–197 | CSS — **light theme** (Power BI look): variables, layout, components, `DASHBOARD (estilo Power BI)` block @58 (tiles/kpi-band/quarters/donut-center/ratio-legend), import banner/status |
+| 199–508 | HTML — login, header/nav, import-pending banner; `#tab-dashboard` @247 (dash-head, kpi-band with 3 KPI tiles + 4 quarter tiles, donut + combo row, category-bar + recent-tx row); transações/import tabs, modals |
+| 510–543 | `<script>` start · Firebase init + global state (`ALL_TX`, `charts`, `filtros`, `editingId`, `importBannerDismissed`) + constants + chart palette (`C_TEAL`/`C_CORAL`/`C_INK`/`C_MUTED`/`C_GRID` @541) |
+| 545–580 | Auth (`loginGoogle`, `onAuthStateChanged`) |
+| 571–614 | Firestore listener, month filter population, `txFiltradas()` |
+| 615–624 | Toggle pessoa (dashboard) |
+| 625–792 | Dashboard render: `personLabel` @626, `renderDashboard` @633, `renderQuarters` @666 (saldo per quarter of active year), `renderRatioChart` @690 (receita×despesa donut, poupança% center), `renderCatChart` @710 (**horizontal bar**, clickable), `renderFluxoChart` @737 (**bars + saldo line combo**), `renderDashTable`/`rowMini` @775 |
+| 794–865 | Import status (`prevMonthStr`, `monthLabel`, `renderImportStatus`, banner show/dismiss) |
+| 866–944 | Transações render (category breakdown, chronological list, sort) |
+| 945–1042 | Transaction CRUD (edit @945, add/edit form @977) |
+| 1043–1104 | Import routing (`routeFile`, `handleFile`, `handleDrop`) + settings + `migrateCategorias` |
+| 1105–1150 | PDF → local `/extrair-pdf` (Claude CLI, subscription) → preview; `isLocalHost()` guard |
+| 1151–1201 | OFX parser |
+| 1202–1292 | CSV parser |
+| 1293–1333 | Category memory (`loadCatMemory`, `saveCatMemory`, `lookupCatMemory`, `applyMemory`) + `escHtml` @1329 |
+| 1334–1356 | `isCreditCardPayment` @1334, `guessCategory` @1339 |
+| 1357–1416 | `renderPreview` @1357, `updatePreviewCount` @1385, `savePreview` @1393, `cancelPreview` |
+| 1417–1461 | Helpers (`fmt`, `fmtK` @1422 compact BRL, `fmtDate`, `fileToBase64`, `toast`, modal/tab utils) |
 
 ### Data Model
 
@@ -99,10 +99,10 @@ criadoEm   string  ISO timestamp
 
 ### Key Constants (update all of these together when adding a category or account)
 
-**CATEGORIAS** (array, line 454): controls all dropdowns and chart legend  
-**CAT_CORES** (object, line 455): hex color per category  
-**CONTA_CORES** (object, line 460): hex color per account — `Nubank #820AD1`, `Bradesco #CC0000`, `Mastercard #EB001B`, `Visa #1A1F71`  
-**CONTA_TIPO** (object, line 461): `"extrato"` or `"fatura"` per account — drives the wording in the import-status panel (cartões = fatura, contas = extrato)  
+**CATEGORIAS** (array, line 531): controls all dropdowns and chart legend  
+**CAT_CORES** (object, line 532): hex color per category — **light-theme palette** (readable on white)  
+**CONTA_CORES** (object, line 537): hex color per account — `Nubank #820AD1`, `Bradesco #CC0000`, `Mastercard #EB001B`, `Visa #1A1F71`  
+**CONTA_TIPO** (object, line 538): `"extrato"` or `"fatura"` per account — drives the wording in the import-status panel (cartões = fatura, contas = extrato)  
 **HTML `<option>` lists**: `fil-conta`, `tx-conta`, `pdf-conta`, `fil-cat`, `tx-cat` — must stay in sync with constants above
 
 ### Import Logic
